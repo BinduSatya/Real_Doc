@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Real Doc — Application Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Epilogue:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --black:   #0d0d0d;
+      --white:   #f7f5f2;
+      --gray-1:  #1a1a1a;
+      --gray-2:  #2e2e2e;
+      --gray-3:  #555;
+      --gray-4:  #999;
+      --gray-5:  #e0ddd8;
+      --accent:  #ff5c35;
+      --accent2: #ffc84a;
+      --green:   #1dba6e;
+      --blue:    #3b82f6;
+      --border:  rgba(255,255,255,0.08);
+      --card-bg: rgba(255,255,255,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Epilogue', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+
+    /* ── Cover ── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 32px;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(255,92,53,0.12) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 50% at 20% 80%, rgba(255,200,74,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .cover-inner { max-width: 960px; margin: 0 auto; width: 100%; position: relative; }
+
+    .doc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,92,53,0.12);
+      border: 1px solid rgba(255,92,53,0.3);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border-radius: 4px;
+      margin-bottom: 32px;
+    }
+    .doc-badge::before { content: '●'; font-size: 0.5rem; }
+
+    .cover h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+    .cover h1 span { color: var(--accent); }
+
+    .cover-sub {
+      font-size: 1.05rem;
+      color: rgba(247,245,242,0.6);
+      max-width: 480px;
+      line-height: 1.6;
+      margin-bottom: 48px;
+    }
+
+    .tech-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 56px;
+    }
+    .tech-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: rgba(247,245,242,0.7);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 4px;
+    }
+
+    .cover-stats {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .stat { display: flex; flex-direction: column; }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--white);
+    }
+    .stat-num span { color: var(--accent); }
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--gray-4);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── TOC ── */
+    .toc-section {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2px;
+      margin-top: 32px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: rgba(247,245,242,0.7);
+      font-size: 0.85rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .toc-item:hover { background: rgba(255,92,53,0.08); color: var(--white); }
+    .toc-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    /* ── Sections ── */
+    section {
+      padding: 80px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+      color: var(--white);
+    }
+
+    .section-intro {
+      font-size: 1rem;
+      color: rgba(247,245,242,0.55);
+      max-width: 600px;
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    /* ── UI Mockup Cards ── */
+    .mockup-container {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    .mockup-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+    .mockup-block.full { grid-template-columns: 1fr; }
+    .mockup-block.reverse { direction: rtl; }
+    .mockup-block.reverse > * { direction: ltr; }
+
+    .mockup-desc { display: flex; flex-direction: column; gap: 16px; }
+    .mockup-desc p { color: rgba(247,245,242,0.6); font-size: 0.9rem; line-height: 1.7; }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: rgba(247,245,242,0.65);
+    }
+    .feature-item::before {
+      content: '→';
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Screen mockups ── */
+    .screen {
+      background: #141414;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .screen-bar {
+      background: #1e1e1e;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .screen-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .screen-body { padding: 20px; }
+
+    /* Home page mockup */
+    .mock-sidebar {
+      width: 180px;
+      background: #0d0d0d;
+      padding: 20px 16px;
+      height: 280px;
+      float: left;
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    .mock-brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .mock-tagline { font-size: 0.65rem; color: #555; line-height: 1.4; }
+
+    .mock-main { overflow: hidden; padding: 20px; }
+    .mock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .mock-title { font-size: 0.9rem; font-weight: 600; color: var(--white); }
+    .mock-btn {
+      background: var(--accent);
+      color: white;
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .mock-doc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .mock-doc-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .mock-doc-preview {
+      height: 44px;
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      opacity: 0.4;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .mock-doc-info { padding: 8px; }
+    .mock-doc-name { font-size: 0.6rem; color: rgba(255,255,255,0.7); font-weight: 500; }
+    .mock-doc-date { font-size: 0.55rem; color: #555; margin-top: 2px; }
+    .mock-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.5rem;
+      color: var(--green);
+      margin-top: 3px;
+    }
+    .mock-live-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Editor mockup */
+    .mock-editor-nav {
+      background: #1a1a1a;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .mock-back { font-size: 0.65rem; color: #666; }
+    .mock-doc-title {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--white);
+      flex: 1;
+    }
+    .mock-avatars { display: flex; gap: -4px; }
+    .mock-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; font-weight: 700; color: white;
+      border: 2px solid #1a1a1a;
+      margin-left: -4px;
+    }
+    .mock-status {
+      font-size: 0.6rem;
+      color: var(--green);
+      background: rgba(29,186,110,0.12);
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mock-toolbar {
+      background: #161616;
+      padding: 8px 16px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .mock-tool {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.4);
+      padding: 3px 6px;
+      border-radius: 3px;
+    }
+    .mock-tool.active { background: rgba(255,92,53,0.15); color: var(--accent); }
+    .mock-divider-v { width: 1px; height: 14px; background: rgba(255,255,255,0.08); margin: 0 2px; }
+
+    .mock-editor-body { padding: 24px 40px; }
+    .mock-h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .mock-p { font-size: 0.7rem; color: rgba(255,255,255,0.4); line-height: 1.6; margin-bottom: 6px; }
+    .mock-cursor {
+      display: inline-block;
+      position: relative;
+    }
+    .mock-cursor::after {
+      content: '';
+      display: inline-block;
+      width: 2px;
+      height: 0.85em;
+      background: #ff5c35;
+      vertical-align: text-top;
+      animation: blink 1s step-end infinite;
+    }
+    .mock-remote-cursor {
+      display: inline-block;
+      border-left: 2px solid #ffc84a;
+      position: relative;
+      height: 1em;
+      vertical-align: text-bottom;
+    }
+    .mock-cursor-label {
+      position: absolute;
+      top: -1.4em;
+      left: 0;
+      background: #ffc84a;
+      color: #000;
+      font-size: 0.5rem;
+      padding: 1px 5px;
+      border-radius: 3px 3px 3px 0;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ── Feature Grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-top: 40px;
+    }
+    .feature-card {
+      background: var(--black);
+      padding: 28px;
+      transition: background 0.2s;
+    }
+    .feature-card:hover { background: rgba(255,255,255,0.02); }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .feature-card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.82rem; color: rgba(247,245,242,0.5); line-height: 1.6; }
+
+    /* ── Architecture ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .arch-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .arch-header {
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--border);
+    }
+    .arch-header.react   { background: rgba(97,218,251,0.08); color: #61dafb; }
+    .arch-header.express { background: rgba(68,68,68,0.3);    color: #aaa; }
+    .arch-header.pg      { background: rgba(51,103,145,0.2);  color: #336791; }
+    .arch-header.redis   { background: rgba(212,28,28,0.1);   color: #dc1c1c; }
+    .arch-header.yjs     { background: rgba(255,92,53,0.1);   color: var(--accent); }
+
+    .arch-body { padding: 16px; }
+    .arch-item {
+      font-size: 0.78rem;
+      color: rgba(247,245,242,0.5);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .arch-item:last-child { border-bottom: none; }
+    .arch-item::before { content: '▸'; font-size: 0.6rem; color: var(--accent); opacity: 0.6; flex-shrink: 0; }
+
+    /* ── Flow diagram ── */
+    .flow-diagram {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      margin-top: 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+    .flow-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--gray-4);
+      margin-bottom: 20px;
+    }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: 8px 0;
+      flex-wrap: wrap;
+    }
+    .flow-node {
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      white-space: nowrap;
+    }
+    .flow-node.client  { background: rgba(97,218,251,0.1); border: 1px solid rgba(97,218,251,0.2); color: #61dafb; }
+    .flow-node.server  { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .flow-node.db      { background: rgba(51,103,145,0.15); border: 1px solid rgba(51,103,145,0.3); color: #6aabdc; }
+    .flow-node.redis   { background: rgba(212,28,28,0.1); border: 1px solid rgba(212,28,28,0.2); color: #f87171; }
+    .flow-arrow {
+      color: var(--gray-3);
+      padding: 0 6px;
+      font-size: 0.8rem;
+    }
+    .flow-label {
+      font-size: 0.6rem;
+      color: var(--gray-4);
+      padding: 0 6px;
+    }
+    .flow-group { margin-bottom: 20px; }
+    .flow-group-title {
+      font-size: 0.6rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+
+    /* ── API Table ── */
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 32px;
+      font-size: 0.82rem;
+    }
+    .api-table th {
+      text-align: left;
+      padding: 10px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-4);
+      border-bottom: 1px solid var(--border);
+    }
+    .api-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: rgba(247,245,242,0.7);
+      vertical-align: top;
+    }
+    .api-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .method.get    { background: rgba(29,186,110,0.15); color: var(--green); }
+    .method.post   { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .method.patch  { background: rgba(255,200,74,0.15); color: var(--accent2); }
+    .method.delete { background: rgba(239,68,68,0.15);  color: #f87171; }
+    .method.ws     { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .endpoint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--white);
+    }
+
+    /* ── Env table ── */
+    .env-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-size: 0.82rem;
+    }
+    .env-table th {
+      text-align: left;
+      padding: 8px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-4);
+      border-bottom: 1px solid var(--border);
+    }
+    .env-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: rgba(247,245,242,0.65);
+      font-size: 0.8rem;
+    }
+    .env-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent2);
+    }
+    .env-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--green);
+    }
+
+    /* ── Code block ── */
+    .code-block {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: rgba(247,245,242,0.7);
+      line-height: 1.8;
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    .code-block .c  { color: #555; }
+    .code-block .k  { color: #a78bfa; }
+    .code-block .s  { color: var(--green); }
+    .code-block .v  { color: var(--accent2); }
+    .code-block .cmd { color: #61dafb; }
+
+    /* ── Setup steps ── */
+    .steps { display: flex; flex-direction: column; gap: 0; margin-top: 32px; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content h3 { font-size: 0.95rem; margin-bottom: 6px; }
+    .step-content p { font-size: 0.82rem; color: rgba(247,245,242,0.5); margin-bottom: 10px; }
+    .step-cmd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 4px;
+      padding: 10px 14px;
+      color: #61dafb;
+      display: block;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 48px 32px;
+      text-align: center;
+      color: var(--gray-4);
+      font-size: 0.78rem;
+    }
+    footer span { color: var(--accent); }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .mockup-block { grid-template-columns: 1fr; }
+      .mockup-block.reverse { direction: ltr; }
+      .cover h1 { font-size: 2.8rem; }
+      .mock-doc-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ COVER ══ -->
+<div class="cover">
+  <div class="cover-inner page">
+    <div class="doc-badge">APPLICATION DOCUMENTATION — v1.0</div>
+
+    <h1>Real<span>Doc</span><br/>Editor</h1>
+    <p class="cover-sub">
+      A real-time collaborative document editor built with CRDT technology,
+      WebSockets, and a modern full-stack architecture.
+    </p>
+
+    <div class="tech-pills">
+      <span class="tech-pill">React 18</span>
+      <span class="tech-pill">TipTap</span>
+      <span class="tech-pill">Yjs CRDT</span>
+      <span class="tech-pill">Express.js</span>
+      <span class="tech-pill">WebSockets</span>
+      <span class="tech-pill">PostgreSQL</span>
+      <span class="tech-pill">Redis Pub/Sub</span>
+      <span class="tech-pill">y-websocket</span>
+    </div>
+
+    <div class="cover-stats">
+      <div class="stat"><span class="stat-num">2<span>pg</span></span><span class="stat-label">App Pages</span></div>
+      <div class="stat"><span class="stat-num">7<span>+</span></span><span class="stat-label">API Endpoints</span></div>
+      <div class="stat"><span class="stat-num">∞</span><span class="stat-label">Collaborators</span></div>
+      <div class="stat"><span class="stat-num">0<span>ms</span></span><span class="stat-label">Conflict Resolution</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TOC ══ -->
+<div class="toc-section">
+  <div class="page">
+    <div class="section-label">TABLE OF CONTENTS</div>
+    <div class="toc-grid">
+      <a href="#page1" class="toc-item"><span class="toc-num">01</span> Application UI & Pages</a>
+      <a href="#features" class="toc-item"><span class="toc-num">02</span> Features Overview</a>
+      <a href="#architecture" class="toc-item"><span class="toc-num">03</span> Technical Architecture</a>
+      <a href="#api" class="toc-item"><span class="toc-num">04</span> API Reference</a>
+      <a href="#setup" class="toc-item"><span class="toc-num">05</span> Setup & Running</a>
+      <a href="#env" class="toc-item"><span class="toc-num">06</span> Configuration</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ PAGE 1: UI & PAGES ══ -->
+<section id="page1">
+  <div class="page">
+    <div class="section-label">01 — APPLICATION UI</div>
+    <h2>How the App Looks</h2>
+    <p class="section-intro">
+      RealDoc has two main pages. The <strong>Home page</strong> is your document dashboard,
+      and the <strong>Editor page</strong> is where real-time collaboration happens.
+    </p>
+
+    <div class="mockup-container">
+
+      <!-- Home Page -->
+      <div class="mockup-block">
+        <div class="mockup-desc">
+          <h3>Page 1 — Home Dashboard</h3>
+          <p>
+            The home screen shows all your documents in a card grid. A dark sidebar
+            on the left displays your branding. Each document card shows its title,
+            last modified date, and a live green badge if someone is currently editing it.
+          </p>
+          <div class="feature-list">
+            <div class="feature-item">Click <strong>+ New Document</strong> to create and immediately navigate to a new doc</div>
+            <div class="feature-item">Click any document card to open it in the editor</div>
+            <div class="feature-item">Hover a card to reveal the <strong>× delete button</strong> (top-right corner)</div>
+            <div class="feature-item">Green <strong>"● N editing"</strong> badge shows live collaborators</div>
+            <div class="feature-item">Document list auto-refreshes every 5 seconds</div>
+          </div>
+        </div>
+
+        <!-- Home mockup -->
+        <div class="screen">
+          <div class="screen-bar">
+            <div class="screen-dot" style="background:#ff5f57"></div>
+            <div class="screen-dot" style="background:#ffbd2e"></div>
+            <div class="screen-dot" style="background:#28c940"></div>
+          </div>
+          <div style="display:flex; height:260px;">
+            <div class="mock-sidebar">
+              <div class="mock-brand">✦ Collab</div>
+              <div class="mock-tagline">Real-time documents,<br/>powered by CRDT.</div>
+            </div>
+            <div class="mock-main" style="flex:1; padding:16px;">
+              <div class="mock-header">
+                <div class="mock-title">Your Documents</div>
+                <div class="mock-btn">+ New Document</div>
+              </div>
+              <div class="mock-doc-grid">
+                <div class="mock-doc-card">
+                  <div class="mock-doc-preview">W</div>
+                  <div class="mock-doc-info">
+                    <div class="mock-doc-name">Welcome Doc</div>
+                    <div class="mock-doc-date">Apr 21, 2026</div>
+                    <div class="mock-live-badge"><span class="mock-live-dot"></span> 2 editing</div>
+                  </div>
+                </div>
+                <div class="mock-doc-card">
+                  <div class="mock-doc-preview">P</div>
+                  <div class="mock-doc-info">
+                    <div class="mock-doc-name">Project Plan</div>
+                    <div class="mock-doc-date">Apr 20, 2026</div>
+                  </div>
+                </div>
+                <div class="mock-doc-card">
+                  <div class="mock-doc-preview">U</div>
+                  <div class="mock-doc-info">
+                    <div class="mock-doc-name">Untitled</div>
+                    <div class="mock-doc-date">Apr 19, 2026</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editor Page -->
+      <div class="mockup-block reverse">
+        <div class="mockup-desc">
+          <h3>Page 2 — Collaborative Editor</h3>
+          <p>
+            The editor page is a full-screen rich text environment. The top navigation bar
+            shows the document title (click to rename), your colored avatar chip, and all
+            other users currently in the document. The formatting toolbar sits just below.
+          </p>
+          <div class="feature-list">
+            <div class="feature-item"><strong>Live cursors</strong> — see exactly where each collaborator's cursor is with a colored label</div>
+            <div class="feature-item"><strong>Click your avatar chip</strong> to change your display name</div>
+            <div class="feature-item"><strong>Click the title</strong> to rename the document inline</div>
+            <div class="feature-item">Status pill shows <strong>Live</strong> (green), <strong>Connecting…</strong> (yellow), or <strong>Offline</strong> (red)</div>
+            <div class="feature-item">All changes <strong>persist automatically</strong> to PostgreSQL every 5 seconds</div>
+          </div>
+        </div>
+
+        <!-- Editor mockup -->
+        <div class="screen">
+          <div class="screen-bar">
+            <div class="screen-dot" style="background:#ff5f57"></div>
+            <div class="screen-dot" style="background:#ffbd2e"></div>
+            <div class="screen-dot" style="background:#28c940"></div>
+          </div>
+          <div class="mock-editor-nav">
+            <div class="mock-back">← Docs</div>
+            <div class="mock-doc-title">Project Kickoff Notes ✎</div>
+            <div class="mock-avatars">
+              <div class="mock-avatar" style="background:#ff5c35">A</div>
+              <div class="mock-avatar" style="background:#ffc84a">B</div>
+              <div class="mock-avatar" style="background:#3b82f6">C</div>
+            </div>
+            <div class="mock-status"><span style="width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;"></span> Live</div>
+          </div>
+          <div class="mock-toolbar">
+            <div class="mock-tool">H1</div>
+            <div class="mock-tool">H2</div>
+            <div class="mock-tool">H3</div>
+            <div class="mock-divider-v"></div>
+            <div class="mock-tool active"><strong>B</strong></div>
+            <div class="mock-tool"><em>I</em></div>
+            <div class="mock-tool" style="text-decoration:underline">U</div>
+            <div class="mock-tool">&lt;&gt;</div>
+            <div class="mock-divider-v"></div>
+            <div class="mock-tool">• List</div>
+            <div class="mock-tool">1. List</div>
+            <div class="mock-divider-v"></div>
+            <div class="mock-tool">Block</div>
+          </div>
+          <div class="mock-editor-body">
+            <div class="mock-h1">Project Kickoff Notes</div>
+            <div class="mock-p">
+              This document outlines the goals and timeline for our
+              <span class="mock-cursor"></span> upcoming launch. All team members
+              are expected to review before the
+            </div>
+            <div class="mock-p" style="position:relative">
+              <span class="mock-remote-cursor">
+                <span class="mock-cursor-label">Swift Owl</span>
+              </span>
+              meeting on Friday. Please add your sections below and
+            </div>
+            <div class="mock-p" style="color:rgba(255,255,255,0.2)">
+              confirm availability by end of week.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ FEATURES ══ -->
+<section id="features">
+  <div class="page">
+    <div class="section-label">02 — FEATURES</div>
+    <h2>What You Can Do</h2>
+    <p class="section-intro">
+      Every feature listed below works out of the box with no extra configuration required.
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Real-Time Collaboration</h3>
+        <p>Multiple users can type simultaneously. Changes appear on every connected screen instantly with zero conflicts, powered by Yjs CRDT.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🖱️</span>
+        <h3>Live Cursors</h3>
+        <p>See every collaborator's cursor position in real time with a colored floating label showing their name. Uses the Awareness protocol.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👤</span>
+        <h3>User Presence</h3>
+        <p>Colored avatar bubbles in the top bar show who is currently in the document. Click your chip to change your display name anytime.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📝</span>
+        <h3>Rich Text Editing</h3>
+        <p>Full TipTap editor with Headings (H1/H2/H3), Bold, Italic, Underline, Inline Code, Code Block, Bullet Lists, and Ordered Lists.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">💾</span>
+        <h3>Auto-Save to PostgreSQL</h3>
+        <p>The Yjs document state is automatically flushed to PostgreSQL as a binary BYTEA snapshot every 5 seconds and on disconnect.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔄</span>
+        <h3>Offline & Reconnect</h3>
+        <p>If a user loses connection, y-websocket reconnects automatically. The CRDT merges all offline changes without conflicts on reconnect.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">✏️</span>
+        <h3>Inline Title Editing</h3>
+        <p>Click the document title in the top nav to rename it. Saves to the database on blur or Enter. Press Escape to cancel.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <h3>Document Management</h3>
+        <p>Create, list, open, and delete documents from the Home dashboard. Hover any card to reveal the delete button.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🚀</span>
+        <h3>Horizontal Scaling</h3>
+        <p>Redis pub/sub propagates Yjs updates between multiple backend instances, making the system ready to run behind a load balancer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ ARCHITECTURE ══ -->
+<section id="architecture">
+  <div class="page">
+    <div class="section-label">03 — ARCHITECTURE</div>
+    <h2>How It Works</h2>
+    <p class="section-intro">
+      The system is split into a React frontend and an Express backend. PostgreSQL stores document state and Redis handles cross-server updates.
+    </p>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-header react">REACT FRONTEND</div>
+        <div class="arch-body">
+          <div class="arch-item">TipTap rich text editor</div>
+          <div class="arch-item">Yjs Y.Doc (CRDT)</div>
+          <div class="arch-item">WebsocketProvider</div>
+          <div class="arch-item">Awareness protocol</div>
+          <div class="arch-item">React Router (2 pages)</div>
+          <div class="arch-item">useCollaboration hook</div>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-header express">EXPRESS BACKEND</div>
+        <div class="arch-body">
+          <div class="arch-item">HTTP REST API</div>
+          <div class="arch-item">WebSocket server (ws)</div>
+          <div class="arch-item">y-websocket protocol</div>
+          <div class="arch-item">Yjs document manager</div>
+          <div class="arch-item">Binary message handler</div>
+          <div class="arch-item">Graceful shutdown flush</div>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-header pg">POSTGRESQL</div>
+        <div class="arch-body">
+          <div class="arch-item">documents table</div>
+          <div class="arch-item">ydoc_state (BYTEA)</div>
+          <div class="arch-item">document_snapshots</div>
+          <div class="arch-item">Auto updated_at trigger</div>
+          <div class="arch-item">Periodic flush (5s)</div>
+          <div class="arch-item">Restore on load</div>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-header redis">REDIS</div>
+        <div class="arch-body">
+          <div class="arch-item">Pub/sub per document</div>
+          <div class="arch-item">Channel: ydoc:&lt;id&gt;</div>
+          <div class="arch-item">Binary update relay</div>
+          <div class="arch-item">Multi-server sync</div>
+          <div class="arch-item">Non-fatal if offline</div>
+        </div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-header yjs">YJS CRDT</div>
+        <div class="arch-body">
+          <div class="arch-item">Y.XmlFragment (text)</div>
+          <div class="arch-item">Conflict-free merges</div>
+          <div class="arch-item">Binary update diffs</div>
+          <div class="arch-item">Sync step1 / step2</div>
+          <div class="arch-item">Awareness states</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data flow -->
+    <div class="flow-diagram">
+      <div class="flow-title">Real-time Update Flow</div>
+
+      <div class="flow-group">
+        <div class="flow-group-title">USER TYPES A CHARACTER</div>
+        <div class="flow-row">
+          <div class="flow-node client">Browser A (TipTap)</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">Yjs produces binary diff</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node client">WebsocketProvider</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">WS frame (binary)</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node server">Express WS Server</div>
+        </div>
+      </div>
+
+      <div class="flow-group">
+        <div class="flow-group-title">SERVER PROCESSES UPDATE</div>
+        <div class="flow-row">
+          <div class="flow-node server">wsHandler.js</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">applyUpdate to Y.Doc</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node server">yjsManager.js</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">broadcast to peers</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node client">Browser B, C, D…</div>
+        </div>
+        <div class="flow-row" style="margin-top:6px">
+          <div class="flow-node server">yjsManager.js</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">PUBLISH bytes</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node redis">Redis: ydoc:&lt;id&gt;</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">peer servers</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node server">Server B, C…</div>
+        </div>
+      </div>
+
+      <div class="flow-group" style="margin-bottom:0">
+        <div class="flow-group-title">PERSISTENCE</div>
+        <div class="flow-row">
+          <div class="flow-node server">yjsManager.js</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">every 5s if dirty</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node db">PostgreSQL: BYTEA</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-label">on next load</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node server">Y.applyUpdate()</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ API REFERENCE ══ -->
+<section id="api">
+  <div class="page">
+    <div class="section-label">04 — API REFERENCE</div>
+    <h2>Endpoints</h2>
+    <p class="section-intro">
+      The backend exposes a REST API for document management and a WebSocket endpoint for real-time collaboration.
+    </p>
+
+    <table class="api-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Description</th>
+          <th>Body / Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td class="endpoint">/api/documents</td>
+          <td>List all documents</td>
+          <td>Returns title, dates, active_users count</td>
+        </tr>
+        <tr>
+          <td><span class="method post">POST</span></td>
+          <td class="endpoint">/api/documents</td>
+          <td>Create new document</td>
+          <td><code style="font-size:0.72rem;color:#ffc84a">{ title: "My Doc" }</code></td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td class="endpoint">/api/documents/:id</td>
+          <td>Get single document</td>
+          <td>Returns metadata + active_users</td>
+        </tr>
+        <tr>
+          <td><span class="method patch">PATCH</span></td>
+          <td class="endpoint">/api/documents/:id</td>
+          <td>Rename document</td>
+          <td><code style="font-size:0.72rem;color:#ffc84a">{ title: "New Name" }</code></td>
+        </tr>
+        <tr>
+          <td><span class="method delete">DELETE</span></td>
+          <td class="endpoint">/api/documents/:id</td>
+          <td>Delete document</td>
+          <td>Returns 204 No Content</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td class="endpoint">/api/documents/:id/snapshots</td>
+          <td>List version snapshots</td>
+          <td>Returns last 20 saved snapshots</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td class="endpoint">/health</td>
+          <td>Server health check</td>
+          <td>Returns DB status + server time</td>
+        </tr>
+        <tr>
+          <td><span class="method ws">WS</span></td>
+          <td class="endpoint">/ws/:documentId</td>
+          <td>Real-time collab socket</td>
+          <td>Binary y-websocket protocol (sync + awareness)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ SETUP ══ -->
+<section id="setup">
+  <div class="page">
+    <div class="section-label">05 — SETUP & RUNNING</div>
+    <h2>Getting Started</h2>
+    <p class="section-intro">
+      Two ways to run the project — Docker (recommended) for one-command startup,
+      or manually for development.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Start PostgreSQL + Redis</h3>
+          <p>Use Docker to spin up the infrastructure without installing anything locally.</p>
+          <code class="step-cmd">docker-compose up postgres redis -d</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Install & Run Backend</h3>
+          <p>Install dependencies, run the database migration, then start the dev server on port 4000.</p>
+          <code class="step-cmd">cd backend<br/>npm install<br/>npm run migrate<br/>npm run dev</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Install & Run Frontend</h3>
+          <p>Open a second terminal, install dependencies, and start Vite on port 5173.</p>
+          <code class="step-cmd">cd frontend<br/>npm install<br/>npm run dev</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Open in Browser</h3>
+          <p>Navigate to the app. Open in multiple tabs or browsers to test real-time collaboration.</p>
+          <code class="step-cmd">http://localhost:5173</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">★</div>
+        <div class="step-content">
+          <h3>Alternative: Full Docker</h3>
+          <p>Build and run everything (backend + frontend + DB + Redis) with a single command.</p>
+          <code class="step-cmd">docker-compose up --build</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ ENV CONFIG ══ -->
+<section id="env">
+  <div class="page">
+    <div class="section-label">06 — CONFIGURATION</div>
+    <h2>Environment Variables</h2>
+    <p class="section-intro">
+      All configuration is in <code style="font-family:'JetBrains Mono',monospace; color:var(--accent2); font-size:0.9rem">backend/.env</code>.
+      Copy from <code style="font-family:'JetBrains Mono',monospace; color:var(--accent2); font-size:0.9rem">.env.example</code> and edit as needed.
+    </p>
+
+    <table class="env-table">
+      <thead>
+        <tr>
+          <th>Variable</th>
+          <th>Default</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="env-key">PORT</td>
+          <td class="env-val">4000</td>
+          <td>HTTP + WebSocket server port</td>
+        </tr>
+        <tr>
+          <td class="env-key">PG_HOST</td>
+          <td class="env-val">localhost</td>
+          <td>PostgreSQL hostname</td>
+        </tr>
+        <tr>
+          <td class="env-key">PG_PORT</td>
+          <td class="env-val">5432</td>
+          <td>PostgreSQL port</td>
+        </tr>
+        <tr>
+          <td class="env-key">PG_USER</td>
+          <td class="env-val">postgres</td>
+          <td>PostgreSQL username</td>
+        </tr>
+        <tr>
+          <td class="env-key">PG_PASSWORD</td>
+          <td class="env-val">postgres</td>
+          <td>PostgreSQL password</td>
+        </tr>
+        <tr>
+          <td class="env-key">PG_DATABASE</td>
+          <td class="env-val">collab_editor</td>
+          <td>Database name</td>
+        </tr>
+        <tr>
+          <td class="env-key">REDIS_HOST</td>
+          <td class="env-val">localhost</td>
+          <td>Redis hostname</td>
+        </tr>
+        <tr>
+          <td class="env-key">REDIS_PORT</td>
+          <td class="env-val">6379</td>
+          <td>Redis port</td>
+        </tr>
+        <tr>
+          <td class="env-key">PERSIST_INTERVAL_MS</td>
+          <td class="env-val">5000</td>
+          <td>How often to flush Yjs state to PostgreSQL (ms)</td>
+        </tr>
+        <tr>
+          <td class="env-key">DOC_IDLE_TIMEOUT_MS</td>
+          <td class="env-val">30000</td>
+          <td>Unload doc from memory after last client disconnects (ms)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ FOOTER ══ -->
+<footer>
+  <div class="page">
+    <p>RealDoc Editor — Built with <span>Yjs CRDT</span>, WebSockets, React, Express, PostgreSQL & Redis</p>
+    <p style="margin-top:8px; color:#333">Documentation generated for v1.0 — April 2026</p>
+  </div>
+</footer>
+
+</body>
+</html>

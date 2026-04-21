@@ -6,32 +6,32 @@ A production-ready real-time collaborative document editor built with **CRDT (Yj
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                           CLIENTS (React)                             │
-│                                                                        │
-│   TipTap Editor ──► Yjs Y.Doc ──► WebsocketProvider ──► WS /ws/:id  │
+│                           CLIENTS (React)                            │
+│                                                                      │
+│   TipTap Editor ──► Yjs Y.Doc ──► WebsocketProvider ──► WS /ws/:id   │
 │   (ProseMirror)       (CRDT)        (y-websocket)       Awareness    │
 └───────────────────────────────────┬──────────────────────────────────┘
                                     │ WebSocket (binary frames)
                                     ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                       EXPRESS SERVER (Node.js)                         │
-│                                                                        │
+│                       EXPRESS SERVER (Node.js)                       │
+│                                                                      │
 │   HTTP /api/documents  ──► REST CRUD  ──► PostgreSQL                 │
-│                                                                        │
+│                                                                      │
 │   WS  /ws/:docId  ──► wsHandler.js                                   │
-│                          │  Sync protocol (step1/step2/update)        │
-│                          │  Awareness protocol (cursors/presence)     │
-│                          ▼                                             │
-│                      yjsManager.js                                    │
-│                          │  In-memory Y.Doc registry                  │
-│                          │  Periodic flush → PostgreSQL (BYTEA)       │
-│                          │  Redis pub/sub ──► peer servers            │
+│                          │  Sync protocol (step1/step2/update)       │
+│                          │  Awareness protocol (cursors/presence)    │
+│                          ▼                                           │
+│                      yjsManager.js                                   │
+│                          │  In-memory Y.Doc registry                 │
+│                          │  Periodic flush → PostgreSQL (BYTEA)      │
+│                          │  Redis pub/sub ──► peer servers           │
 └──────────────────────────────────────────────────────────────────────┘
                             │               │
                     ┌───────┴────┐   ┌──────┴──────┐
-                    │ PostgreSQL │   │    Redis     │
-                    │  documents │   │  pub/sub     │
-                    │  (BYTEA)   │   │  ydoc:<id>   │
+                    │ PostgreSQL │   │    Redis    │
+                    │  documents │   │  pub/sub    │
+                    │  (BYTEA)   │   │  ydoc:<id>  │
                     └────────────┘   └─────────────┘
 ```
 
