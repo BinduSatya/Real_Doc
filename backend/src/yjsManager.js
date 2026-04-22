@@ -12,10 +12,11 @@
  *   • Unload idle docs from memory
  */
 
-const Y                  = require('yjs');
-const awarenessProtocol  = require('y-protocols/awareness');
-const { pool }           = require('./db');
-const redis              = require('./redis');
+import * as Y from 'yjs';
+import * as awarenessProtocol from 'y-protocols/awareness';
+
+import { pool } from './db.js';
+import redis from './redis.js';
 
 const PERSIST_INTERVAL   = parseInt(process.env.PERSIST_INTERVAL_MS  || '5000');
 const IDLE_TIMEOUT       = parseInt(process.env.DOC_IDLE_TIMEOUT_MS   || '30000');
@@ -157,7 +158,6 @@ function removeConnection(docId, ws) {
   const entry = docs.get(docId);
   if (!entry) return;
   entry.connections.delete(ws);
-  awarenessProtocol.removeAwarenessStates(entry.awareness, [ws.__clientId], null);
   if (entry.connections.size === 0) scheduleIdleUnload(docId);
 }
 
@@ -177,6 +177,20 @@ function broadcast(docId, msg, except) {
   }
 }
 
+function getActiveUserCount(docId) {
+  const entry = docs.get(docId);
+  if (!entry) return 0;
+
+  const userIds = new Set();
+  for (const state of entry.awareness.getStates().values()) {
+    if (state?.user?.id) {
+      userIds.add(state.user.id);
+    }
+  }
+
+  return userIds.size;
+}
+
 /**
  * Flush all dirty docs to PostgreSQL (call on SIGTERM).
  */
@@ -189,4 +203,14 @@ async function flushAll() {
   console.log('[YjsManager] All docs flushed');
 }
 
-module.exports = { getOrCreate, addConnection, removeConnection, broadcast, flushAll, docs };
+export { getOrCreate, addConnection, removeConnection, broadcast, getActiveUserCount, flushAll, docs };
+
+export default {
+  getOrCreate,
+  addConnection,
+  removeConnection,
+  broadcast,
+  getActiveUserCount,
+  flushAll,
+  docs,
+};

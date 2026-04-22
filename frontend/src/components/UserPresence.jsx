@@ -5,13 +5,13 @@ import React from 'react';
  * and a connection status pill (Live / Connecting / Offline).
  *
  * Props:
- *   localUser      — { name, color }  the current user
- *   awarenessUsers — [{ clientId, name, color }]  other connected users
+ *   localUser      — { id, name, color }  the current user
+ *   awarenessUsers — [{ id, clientId, name, color }]  other connected users
  *   status         — 'connected' | 'connecting' | 'disconnected'
  */
 export default function UserPresence({ localUser, awarenessUsers, status }) {
   const allUsers = [
-    { ...localUser, clientId: 'local', isLocal: true },
+    { ...localUser, presenceKey: `local-${localUser.id}`, isLocal: true },
     ...awarenessUsers.map((u) => ({ ...u, isLocal: false })),
   ];
 
@@ -20,7 +20,7 @@ export default function UserPresence({ localUser, awarenessUsers, status }) {
       <div className="presence-avatars">
         {allUsers.map((user) => (
           <div
-            key={user.clientId}
+            key={user.presenceKey || user.id || user.clientId}
             className={`avatar ${user.isLocal ? 'avatar--local' : ''}`}
             style={{
               backgroundColor: user.color || '#888',

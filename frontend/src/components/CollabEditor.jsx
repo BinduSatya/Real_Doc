@@ -7,7 +7,7 @@
  * Props:
  *   ydoc       — Y.Doc instance from useCollaboration()
  *   provider   — WebsocketProvider instance (for cursor awareness)
- *   localUser  — { name, color }
+ *   localUser  — { id, name, color }
  */
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document    from '@tiptap/extension-document';
@@ -64,7 +64,7 @@ export default function CollabEditor({
         ...(provider
           ? [CollaborationCursor.configure({
               provider,
-              user: { name: localUser.name, color: localUser.color },
+              user: { id: localUser.id, name: localUser.name, color: localUser.color },
             })]
           : []),
       ],

@@ -1,7 +1,8 @@
-const express = require('express');
-const { v4: uuidv4 } = require('uuid');
-const { pool } = require('../db');
-const { docs }  = require('../yjsManager');
+import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
+
+import { pool } from '../db.js';
+import { getActiveUserCount } from '../yjsManager.js';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
     );
     const rows = result.rows.map((row) => ({
       ...row,
-      active_users: docs.get(row.id)?.connections.size ?? 0,
+      active_users: getActiveUserCount(row.id),
     }));
     res.json(rows);
   } catch (err) {
@@ -46,7 +47,7 @@ router.get('/:id', async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
     const doc = result.rows[0];
-    doc.active_users = docs.get(doc.id)?.connections.size ?? 0;
+    doc.active_users = getActiveUserCount(doc.id);
     res.json(doc);
   } catch (err) {
     console.error('[REST] GET /documents/:id', err);
@@ -97,4 +98,4 @@ router.get('/:id/snapshots', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -24,15 +24,55 @@ function randomName() {
   return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 }
 
+function createUserId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function normalizeUser(user) {
+  return {
+    id:    typeof user?.id === 'string' && user.id ? user.id : createUserId(),
+    name:  typeof user?.name === 'string' && user.name.trim() ? user.name : randomName(),
+    color: typeof user?.color === 'string' && user.color ? user.color : randomColor(),
+  };
+}
+
 // Persist user identity across refreshes
 function getLocalUser() {
   try {
     const stored = localStorage.getItem('collab-user');
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const user = normalizeUser(JSON.parse(stored));
+      saveLocalUser(user);
+      return user;
+    }
   } catch (_) {}
-  const user = { name: randomName(), color: randomColor() };
-  localStorage.setItem('collab-user', JSON.stringify(user));
+  const user = normalizeUser();
+  saveLocalUser(user);
   return user;
+}
+
+function saveLocalUser(user) {
+  try {
+    localStorage.setItem('collab-user', JSON.stringify(user));
+  } catch (_) {}
+}
+
+function toAwarenessUser(user) {
+  return {
+    id:    user.id,
+    name:  user.name,
+    color: user.color,
+  };
+}
+
+function dedupeUsersById(users) {
+  const byId = new Map();
+  for (const user of users) {
+    if (!user.id || !user.name) continue;
+    byId.set(user.id, user);
+  }
+  return [...byId.values()];
 }
 
 export function useCollaboration(docId) {
@@ -41,9 +81,10 @@ export function useCollaboration(docId) {
 
   const [status,      setStatus]      = useState('connecting'); // connecting | connected | disconnected
   const [awarenessUsers, setAwarenessUsers] = useState([]);
+  const [localUser, setLocalUser] = useState(getLocalUser);
 
-  // Stable local user identity
-  const localUser = useRef(getLocalUser()).current;
+  const localUserRef = useRef(localUser);
+  localUserRef.current = localUser;
 
   useEffect(() => {
     if (!docId) return;
@@ -60,10 +101,7 @@ export function useCollaboration(docId) {
     providerRef.current = provider;
 
     // Set local user awareness state
-    provider.awareness.setLocalStateField('user', {
-      name:  localUser.name,
-      color: localUser.color,
-    });
+    provider.awareness.setLocalStateField('user', toAwarenessUser(localUserRef.current));
 
     // Track connection status
     provider.on('status', ({ status }) => setStatus(status));
@@ -71,13 +109,14 @@ export function useCollaboration(docId) {
     // Track who else is editing
     const updateUsers = () => {
       const states = [...provider.awareness.getStates().entries()];
-      const users  = states
+      const users = states
         .filter(([clientId]) => clientId !== provider.awareness.clientID)
         .map(([clientId, state]) => ({ clientId, ...state.user }))
-        .filter((u) => u.name); // filter disconnected / empty states
-      setAwarenessUsers(users);
+        .filter((u) => u.id !== localUserRef.current.id);
+      setAwarenessUsers(dedupeUsersById(users));
     };
     provider.awareness.on('change', updateUsers);
+    updateUsers();
 
     return () => {
       provider.awareness.off('change', updateUsers);
@@ -90,13 +129,14 @@ export function useCollaboration(docId) {
 
   // Allow the UI to update the local user's display name
   const setUserName = useCallback((name) => {
-    localUser.name = name;
-    localStorage.setItem('collab-user', JSON.stringify(localUser));
-    providerRef.current?.awareness.setLocalStateField('user', {
-      name,
-      color: localUser.color,
+    setLocalUser((current) => {
+      const updated = { ...current, name };
+      localUserRef.current = updated;
+      saveLocalUser(updated);
+      providerRef.current?.awareness.setLocalStateField('user', toAwarenessUser(updated));
+      return updated;
     });
-  }, [localUser]);
+  }, []);
 
   return {
     ydoc:       ydocRef.current,

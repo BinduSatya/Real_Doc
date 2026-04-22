@@ -1,7 +1,12 @@
-require('dotenv').config();
-const fs   = require('fs');
-const path = require('path');
-const { Pool } = require('pg');
+import 'dotenv/config';
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Pool } from 'pg';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pool = new Pool({
   host:     process.env.PG_HOST,
@@ -9,6 +14,9 @@ const pool = new Pool({
   user:     process.env.PG_USER,
   password: process.env.PG_PASSWORD,
   database: process.env.PG_DATABASE,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 async function run() {

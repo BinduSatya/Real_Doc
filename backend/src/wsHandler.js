@@ -16,16 +16,30 @@
  *   2 = syncUpdate — bidirectional:    incremental Yjs update
  */
 
-const Y                  = require('yjs');
-const syncProtocol       = require('y-protocols/sync');
-const awarenessProtocol  = require('y-protocols/awareness');
-const encoding           = require('lib0/encoding');
-const decoding           = require('lib0/decoding');
-const { v4: uuidv4 }     = require('uuid');
-const yjsManager         = require('./yjsManager');
+import * as syncProtocol from 'y-protocols/sync';
+import * as awarenessProtocol from 'y-protocols/awareness';
+import * as encoding from 'lib0/encoding';
+import * as decoding from 'lib0/decoding';
+
+import * as yjsManager from './yjsManager.js';
 
 const messageSync       = 0;
 const messageAwareness  = 1;
+
+function readAwarenessClientIds(update) {
+  const clientIds = [];
+  const dec = decoding.createDecoder(update);
+  const len = decoding.readVarUint(dec);
+
+  for (let i = 0; i < len; i += 1) {
+    const clientId = decoding.readVarUint(dec);
+    decoding.readVarUint(dec); // clock
+    decoding.readVarString(dec); // state
+    clientIds.push(clientId);
+  }
+
+  return clientIds;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Message builders
@@ -71,8 +85,7 @@ function buildAwareness(awareness, clientIds) {
  * @param {string}                 docId   — extracted from URL path
  */
 async function setupConnection(ws, docId) {
-  // Assign a stable numeric clientId for this WS session
-  ws.__clientId = Math.floor(Math.random() * 0xffffffff);
+  ws.__awarenessClientIds = new Set();
 
   const entry = await yjsManager.getOrCreate(docId);
   const { ydoc, awareness } = entry;
@@ -137,6 +150,9 @@ async function setupConnection(ws, docId) {
 
         case messageAwareness: {
           const awarenessUpdate = decoding.readVarUint8Array(dec);
+          for (const clientId of readAwarenessClientIds(awarenessUpdate)) {
+            ws.__awarenessClientIds.add(clientId);
+          }
           awarenessProtocol.applyAwarenessUpdate(awareness, awarenessUpdate, ws);
           // Relay awareness to other connections
           yjsManager.broadcast(docId, msg, ws);
@@ -155,7 +171,7 @@ async function setupConnection(ws, docId) {
   ws.on('close', () => {
     ydoc.off('update', docUpdateHandler);
     awareness.off('update', awarenessUpdateHandler);
-    awarenessProtocol.removeAwarenessStates(awareness, [ws.__clientId], ws);
+    awarenessProtocol.removeAwarenessStates(awareness, [...ws.__awarenessClientIds], ws);
     yjsManager.removeConnection(docId, ws);
     console.log(`[WS] Client disconnected from doc ${docId}`);
   });
@@ -164,7 +180,7 @@ async function setupConnection(ws, docId) {
     console.error(`[WS] Client error on doc ${docId}:`, err.message);
   });
 
-  console.log(`[WS] Client connected to doc ${docId} (clientId=${ws.__clientId})`);
+  console.log(`[WS] Client connected to doc ${docId}`);
 }
 
-module.exports = { setupConnection };
+export { setupConnection };

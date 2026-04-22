@@ -9,12 +9,13 @@
  * Two separate ioredis clients are required because a client in subscriber
  * mode cannot issue regular commands.
  */
-const Redis = require('ioredis');
+import Redis from "ioredis";
 
 const redisConfig = {
-  host:     process.env.REDIS_HOST     || 'localhost',
-  port:     parseInt(process.env.REDIS_PORT || '6379'),
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379"),
   password: process.env.REDIS_PASSWORD || undefined,
+  tls: {},
   lazyConnect: true,
   retryStrategy: (times) => Math.min(times * 100, 3000),
 };
@@ -24,8 +25,8 @@ const publisher = new Redis(redisConfig);
 // Subscriber client — dedicated to SUBSCRIBE / PSUBSCRIBE
 const subscriber = new Redis(redisConfig);
 
-publisher.on('error',  (e) => console.error('[Redis pub]', e.message));
-subscriber.on('error', (e) => console.error('[Redis sub]', e.message));
+publisher.on("error", (e) => console.error("[Redis pub]", e.message));
+subscriber.on("error", (e) => console.error("[Redis sub]", e.message));
 
 /**
  * Connect both clients. Called once at server start.
@@ -36,9 +37,12 @@ async function connect() {
   try {
     await publisher.connect();
     await subscriber.connect();
-    console.log('[Redis] Connected (pub/sub ready)');
+    console.log("[Redis] Connected (pub/sub ready)");
   } catch (err) {
-    console.warn('[Redis] Could not connect — running in single-instance mode:', err.message);
+    console.warn(
+      "[Redis] Could not connect — running in single-instance mode:",
+      err.message,
+    );
   }
 }
 
@@ -64,7 +68,7 @@ async function publishUpdate(docId, update) {
 async function subscribeToDoc(docId, handler) {
   const channel = `ydoc:${docId}`;
   await subscriber.subscribe(channel);
-  subscriber.on('messageBuffer', (chan, msg) => {
+  subscriber.on("messageBuffer", (chan, msg) => {
     if (chan.toString() === channel) {
       handler(new Uint8Array(msg));
     }
@@ -80,4 +84,18 @@ async function unsubscribeFromDoc(docId) {
   } catch (_) {}
 }
 
-module.exports = { connect, publishUpdate, subscribeToDoc, unsubscribeFromDoc, publisher };
+export {
+  connect,
+  publishUpdate,
+  subscribeToDoc,
+  unsubscribeFromDoc,
+  publisher,
+};
+
+export default {
+  connect,
+  publishUpdate,
+  subscribeToDoc,
+  unsubscribeFromDoc,
+  publisher,
+};

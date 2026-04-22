@@ -1,16 +1,16 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const http    = require('http');
-const express = require('express');
-const cors    = require('cors');
-const { WebSocketServer } = require('ws');
-const url     = require('url');
+import http from 'node:http';
+import { parse } from 'node:url';
+import express from 'express';
+import cors from 'cors';
+import { WebSocketServer } from 'ws';
 
-const { ping }          = require('./db');
-const redis             = require('./redis');
-const yjsManager        = require('./yjsManager');
-const { setupConnection } = require('./wsHandler');
-const documentRoutes    = require('./routes/documents');
+import { ping } from './db.js';
+import redis from './redis.js';
+import * as yjsManager from './yjsManager.js';
+import { setupConnection } from './wsHandler.js';
+import documentRoutes from './routes/documents.js';
 
 const PORT = parseInt(process.env.PORT || '4000');
 
@@ -44,7 +44,7 @@ const wss = new WebSocketServer({ noServer: true });
  * The documentId must match a UUID in the `documents` table.
  */
 server.on('upgrade', (req, socket, head) => {
-  const { pathname } = url.parse(req.url);
+  const { pathname } = parse(req.url);
   const match = pathname.match(/^\/ws\/([0-9a-f-]{36})$/i);
 
   if (!match) {
