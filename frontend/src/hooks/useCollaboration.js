@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+import { getAccessToken } from '../api';
 
 // Palette of colors assigned to users
 const USER_COLORS = [
@@ -18,12 +19,6 @@ function randomColor() {
   return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
-function randomName() {
-  const adjectives = ['Swift', 'Bold', 'Calm', 'Keen', 'Wise', 'Bright'];
-  const nouns      = ['Owl', 'Fox', 'Bear', 'Deer', 'Hawk', 'Wolf'];
-  return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
-}
-
 function createUserId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `user-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -32,7 +27,7 @@ function createUserId() {
 function normalizeUser(user) {
   return {
     id:    typeof user?.id === 'string' && user.id ? user.id : createUserId(),
-    name:  typeof user?.name === 'string' && user.name.trim() ? user.name : randomName(),
+    name:  typeof user?.name === 'string' && user.name.trim() ? user.name : 'Guest',
     color: typeof user?.color === 'string' && user.color ? user.color : randomColor(),
   };
 }
@@ -75,19 +70,25 @@ function dedupeUsersById(users) {
   return [...byId.values()];
 }
 
-export function useCollaboration(docId) {
+export function useCollaboration(docId, currentUser) {
   const ydocRef    = useRef(null);
   const providerRef = useRef(null);
 
   const [status,      setStatus]      = useState('connecting'); // connecting | connected | disconnected
   const [awarenessUsers, setAwarenessUsers] = useState([]);
-  const [localUser, setLocalUser] = useState(getLocalUser);
+  const [localUser, setLocalUser] = useState(() => normalizeUser({
+    ...getLocalUser(),
+    id: currentUser?.id,
+    name: currentUser?.displayName,
+  }));
 
   const localUserRef = useRef(localUser);
   localUserRef.current = localUser;
 
   useEffect(() => {
     if (!docId) return;
+    const token = getAccessToken();
+    if (!token) return;
 
     // Create a fresh Y.Doc for this document
     const ydoc = new Y.Doc();
@@ -95,7 +96,7 @@ export function useCollaboration(docId) {
 
     // Connect via WebSocket (proxied through Vite dev server → Express)
     const wsUrl  = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
-    const provider = new WebsocketProvider(wsUrl, `ws/${docId}`, ydoc, {
+    const provider = new WebsocketProvider(wsUrl, `ws/${docId}?token=${encodeURIComponent(token)}`, ydoc, {
       connect: true,
     });
     providerRef.current = provider;
@@ -105,6 +106,12 @@ export function useCollaboration(docId) {
 
     // Track connection status
     provider.on('status', ({ status }) => setStatus(status));
+    const handleConnectionClose = (event) => {
+      if (event?.code === 4002) {
+        window.location.reload();
+      }
+    };
+    provider.on('connection-close', handleConnectionClose);
 
     // Track who else is editing
     const updateUsers = () => {
@@ -119,6 +126,7 @@ export function useCollaboration(docId) {
     updateUsers();
 
     return () => {
+      provider.off('connection-close', handleConnectionClose);
       provider.awareness.off('change', updateUsers);
       provider.destroy();
       ydoc.destroy();

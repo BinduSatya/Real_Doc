@@ -84,8 +84,9 @@ function buildAwareness(awareness, clientIds) {
  * @param {import('ws').WebSocket} ws
  * @param {string}                 docId   — extracted from URL path
  */
-async function setupConnection(ws, docId) {
+async function setupConnection(ws, docId, socketUser) {
   ws.__awarenessClientIds = new Set();
+  ws.__user = socketUser;
 
   const entry = await yjsManager.getOrCreate(docId);
   const { ydoc, awareness } = entry;
@@ -127,6 +128,15 @@ async function setupConnection(ws, docId) {
 
       switch (msgType) {
         case messageSync: {
+          const syncTypeDec = decoding.createDecoder(msg);
+          decoding.readVarUint(syncTypeDec);
+          const incomingSyncType = decoding.readVarUint(syncTypeDec);
+
+          if (socketUser.role === 'viewer' && incomingSyncType !== 0) {
+            console.warn(`[WS] Blocked read-only update from ${socketUser.email} on ${docId}`);
+            return;
+          }
+
           const enc = encoding.createEncoder();
           encoding.writeVarUint(enc, messageSync);
           const syncMsgType = syncProtocol.readSyncMessage(dec, enc, ydoc, ws);
@@ -180,7 +190,7 @@ async function setupConnection(ws, docId) {
     console.error(`[WS] Client error on doc ${docId}:`, err.message);
   });
 
-  console.log(`[WS] Client connected to doc ${docId}`);
+  console.log(`[WS] ${socketUser.email} connected to doc ${docId} as ${socketUser.role}`);
 }
 
 export { setupConnection };

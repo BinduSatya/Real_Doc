@@ -6,10 +6,12 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
 
-import { ping } from './db.js';
+import { ping, pool } from './db.js';
 import redis from './redis.js';
 import * as yjsManager from './yjsManager.js';
 import { setupConnection } from './wsHandler.js';
+import { verifyJwt } from './auth.js';
+import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
 
 const PORT = parseInt(process.env.PORT || '4000');
@@ -19,7 +21,7 @@ const PORT = parseInt(process.env.PORT || '4000');
 // ─────────────────────────────────────────────────────────────────────────────
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }));
 app.use(express.json());
 
 // Health-check
@@ -29,6 +31,7 @@ app.get('/health', async (_req, res) => {
 });
 
 // REST API
+app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,8 +46,24 @@ const wss = new WebSocketServer({ noServer: true });
  *
  * The documentId must match a UUID in the `documents` table.
  */
-server.on('upgrade', (req, socket, head) => {
-  const { pathname } = parse(req.url);
+async function authenticateSocket(req, docId, token) {
+  const payload = verifyJwt(token, 'access');
+  const result = await pool.query(
+    `SELECT u.id, u.email, u.display_name, u.token_version, dm.role
+       FROM users u
+       JOIN document_members dm ON dm.user_id = u.id
+      WHERE u.id = $1 AND dm.document_id = $2`,
+    [payload.sub, docId]
+  );
+  const user = result.rows[0];
+  if (!user || user.token_version !== payload.tokenVersion) {
+    throw new Error('Unauthorized websocket');
+  }
+  return { ...user, accessExp: payload.exp };
+}
+
+server.on('upgrade', async (req, socket, head) => {
+  const { pathname, query } = parse(req.url, true);
   const match = pathname.match(/^\/ws\/([0-9a-f-]{36})$/i);
 
   if (!match) {
@@ -54,14 +73,23 @@ server.on('upgrade', (req, socket, head) => {
   }
 
   const docId = match[1];
+  let socketUser;
+
+  try {
+    socketUser = await authenticateSocket(req, docId, query.token);
+  } catch (err) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
 
   wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit('connection', ws, req, docId);
+    wss.emit('connection', ws, req, docId, socketUser);
   });
 });
 
-wss.on('connection', (ws, _req, docId) => {
-  setupConnection(ws, docId);
+wss.on('connection', (ws, _req, docId, socketUser) => {
+  setupConnection(ws, docId, socketUser);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

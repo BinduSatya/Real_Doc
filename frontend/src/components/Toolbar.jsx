@@ -2,10 +2,11 @@ import React from 'react';
 
 const ToolbarButton = ({ onClick, active, disabled, title, children }) => (
   <button
-    onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+    onMouseDown={(e) => { e.preventDefault(); if (!disabled) onClick(); }}
     disabled={disabled}
     title={title}
     className={`toolbar-btn${active ? ' active' : ''}`}
+    type="button"
   >
     {children}
   </button>
@@ -13,74 +14,115 @@ const ToolbarButton = ({ onClick, active, disabled, title, children }) => (
 
 const Divider = () => <span className="toolbar-divider" />;
 
-export default function Toolbar({ editor }) {
+export default function Toolbar({ editor, disabled = false }) {
   if (!editor) return null;
+
+  const fontOptions = [
+    { label: 'Sans', value: 'var(--font-ui)' },
+    { label: 'Serif', value: 'Georgia, serif' },
+    { label: 'Mono', value: 'var(--font-mono)' },
+    { label: 'Arial', value: 'Arial, sans-serif' },
+    { label: 'Times', value: '"Times New Roman", serif' },
+  ];
+  const sizeOptions = ['12px', '14px', '16px', '18px', '20px', '24px', '30px', '36px'];
+
+  const align = (value) => editor.chain().focus()
+    .updateAttributes('paragraph', { textAlign: value })
+    .updateAttributes('heading', { textAlign: value })
+    .run();
+  const alignActive = (value) => editor.isActive({ textAlign: value }) || (value === 'left' && !editor.isActive({ textAlign: 'center' }) && !editor.isActive({ textAlign: 'right' }));
+  const currentStyle = editor.getAttributes('textStyle');
+  const setTextStyle = (attrs) => editor.chain().focus().setMark('textStyle', {
+    ...currentStyle,
+    ...attrs,
+  }).run();
+  const currentFont = currentStyle.fontFamily || 'var(--font-ui)';
+  const currentSize = currentStyle.fontSize || '18px';
 
   return (
     <div className="toolbar">
-      {/* Headings */}
+      <select
+        className="toolbar-select"
+        value={currentFont}
+        disabled={disabled}
+        onChange={(event) => setTextStyle({ fontFamily: event.target.value })}
+        title="Font style"
+      >
+        {fontOptions.map((font) => (
+          <option key={font.value} value={font.value}>{font.label}</option>
+        ))}
+      </select>
+      <select
+        className="toolbar-select toolbar-select--size"
+        value={currentSize}
+        disabled={disabled}
+        onChange={(event) => setTextStyle({ fontSize: event.target.value })}
+        title="Font size"
+      >
+        {sizeOptions.map((size) => (
+          <option key={size} value={size}>{Number.parseInt(size, 10)}</option>
+        ))}
+      </select>
+
+      <Divider />
+
       <ToolbarButton
         title="Heading 1"
+        disabled={disabled}
         active={editor.isActive('heading', { level: 1 })}
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
       >H1</ToolbarButton>
       <ToolbarButton
         title="Heading 2"
+        disabled={disabled}
         active={editor.isActive('heading', { level: 2 })}
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >H2</ToolbarButton>
       <ToolbarButton
         title="Heading 3"
+        disabled={disabled}
         active={editor.isActive('heading', { level: 3 })}
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >H3</ToolbarButton>
 
       <Divider />
 
-      {/* Inline formatting */}
-      <ToolbarButton
-        title="Bold (Ctrl+B)"
-        active={editor.isActive('bold')}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-      ><strong>B</strong></ToolbarButton>
-      <ToolbarButton
-        title="Italic (Ctrl+I)"
-        active={editor.isActive('italic')}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      ><em>I</em></ToolbarButton>
-      <ToolbarButton
-        title="Underline (Ctrl+U)"
-        active={editor.isActive('underline')}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      ><span style={{ textDecoration: 'underline' }}>U</span></ToolbarButton>
-      <ToolbarButton
-        title="Inline Code"
-        active={editor.isActive('code')}
-        onClick={() => editor.chain().focus().toggleCode().run()}
-      >{"<>"}</ToolbarButton>
+      <ToolbarButton title="Bold" disabled={disabled} active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+        <strong>B</strong>
+      </ToolbarButton>
+      <ToolbarButton title="Italic" disabled={disabled} active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <em>I</em>
+      </ToolbarButton>
+      <ToolbarButton title="Underline" disabled={disabled} active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        <span style={{ textDecoration: 'underline' }}>U</span>
+      </ToolbarButton>
+      <ToolbarButton title="Inline Code" disabled={disabled} active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
+        {'<>'}
+      </ToolbarButton>
 
       <Divider />
 
-      {/* Lists */}
-      <ToolbarButton
-        title="Bullet List"
-        active={editor.isActive('bulletList')}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-      >• List</ToolbarButton>
-      <ToolbarButton
-        title="Ordered List"
-        active={editor.isActive('orderedList')}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-      >1. List</ToolbarButton>
+      <ToolbarButton title="Align left" disabled={disabled} active={alignActive('left')} onClick={() => align('left')}>
+        Left
+      </ToolbarButton>
+      <ToolbarButton title="Align center" disabled={disabled} active={alignActive('center')} onClick={() => align('center')}>
+        Center
+      </ToolbarButton>
+      <ToolbarButton title="Align right" disabled={disabled} active={alignActive('right')} onClick={() => align('right')}>
+        Right
+      </ToolbarButton>
 
       <Divider />
 
-      {/* Code block */}
-      <ToolbarButton
-        title="Code Block"
-        active={editor.isActive('codeBlock')}
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-      >Block</ToolbarButton>
+      <ToolbarButton title="Bullet List" disabled={disabled} active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        List
+      </ToolbarButton>
+      <ToolbarButton title="Ordered List" disabled={disabled} active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        1.
+      </ToolbarButton>
+      <ToolbarButton title="Code Block" disabled={disabled} active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+        Block
+      </ToolbarButton>
     </div>
   );
 }

@@ -20,6 +20,8 @@ import redis from './redis.js';
 
 const PERSIST_INTERVAL   = parseInt(process.env.PERSIST_INTERVAL_MS  || '5000');
 const IDLE_TIMEOUT       = parseInt(process.env.DOC_IDLE_TIMEOUT_MS   || '30000');
+const SNAPSHOT_INTERVAL  = parseInt(process.env.SNAPSHOT_INTERVAL_MS || '60000');
+const SNAPSHOT_CHANGES   = parseInt(process.env.SNAPSHOT_CHANGE_COUNT || '12');
 
 /**
  * @typedef {Object} DocEntry
@@ -50,7 +52,14 @@ async function loadFromDB(docId) {
   return res.rows[0]?.ydoc_state ?? null; // Buffer or null
 }
 
-async function saveToDB(docId, ydoc) {
+async function getCurrentState(docId) {
+  const entry = docs.get(docId);
+  if (entry) return encodeState(entry.ydoc);
+  return loadFromDB(docId);
+}
+
+async function saveToDB(docId, entry) {
+  const ydoc = entry.ydoc;
   const state = encodeState(ydoc);
   await pool.query(
     `UPDATE documents
@@ -58,6 +67,22 @@ async function saveToDB(docId, ydoc) {
       WHERE id = $2`,
     [state, docId]
   );
+
+  const shouldSnapshot =
+    entry.changesSinceSnapshot >= SNAPSHOT_CHANGES ||
+    Date.now() - entry.lastSnapshotAt >= SNAPSHOT_INTERVAL;
+
+  if (shouldSnapshot) {
+    await pool.query(
+      `INSERT INTO document_snapshots (document_id, version_number, ydoc_state, label)
+       SELECT $1, COALESCE(MAX(version_number), 0) + 1, $2, $3
+         FROM document_snapshots
+        WHERE document_id = $1`,
+      [docId, state, 'Autosave']
+    );
+    entry.changesSinceSnapshot = 0;
+    entry.lastSnapshotAt = Date.now();
+  }
 }
 
 function scheduleIdleUnload(docId) {
@@ -68,7 +93,7 @@ function scheduleIdleUnload(docId) {
   entry.idleTimer = setTimeout(async () => {
     const e = docs.get(docId);
     if (!e || e.connections.size > 0) return; // clients reconnected
-    if (e.dirty) await saveToDB(docId, e.ydoc);
+    if (e.dirty) await saveToDB(docId, e);
     clearInterval(e.persistTimer);
     e.ydoc.destroy();
     docs.delete(docId);
@@ -108,12 +133,14 @@ async function getOrCreate(docId) {
     persistTimer: null,
     idleTimer:    null,
     dirty:        false,
+    changesSinceSnapshot: 0,
+    lastSnapshotAt: Date.now(),
   };
 
   // Periodic flush to PostgreSQL
   entry.persistTimer = setInterval(async () => {
     if (entry.dirty) {
-      await saveToDB(docId, ydoc);
+      await saveToDB(docId, entry);
       entry.dirty = false;
     }
   }, PERSIST_INTERVAL);
@@ -129,6 +156,7 @@ async function getOrCreate(docId) {
   // When the local doc changes, propagate to Redis peers + mark dirty
   ydoc.on('update', (update, origin) => {
     entry.dirty = true;
+    entry.changesSinceSnapshot += 1;
     if (origin !== 'redis') {
       redis.publishUpdate(docId, update);
     }
@@ -165,6 +193,7 @@ function removeConnection(docId, ws) {
  * Broadcast a binary message to all connections of a doc EXCEPT the sender.
  * @param {string}                  docId
  * @param {Uint8Array|Buffer}       msg
+ 
  * @param {import('ws').WebSocket}  [except]
  */
 function broadcast(docId, msg, except) {
@@ -191,19 +220,53 @@ function getActiveUserCount(docId) {
   return userIds.size;
 }
 
+async function replaceDocumentState(docId, state) {
+  await pool.query(
+    `UPDATE documents
+        SET ydoc_state = $1, updated_at = NOW()
+      WHERE id = $2`,
+    [state, docId]
+  );
+
+  const entry = docs.get(docId);
+  if (!entry) return;
+
+  clearInterval(entry.persistTimer);
+  clearTimeout(entry.idleTimer);
+  docs.delete(docId);
+  await redis.unsubscribeFromDoc(docId);
+
+  for (const conn of entry.connections) {
+    if (conn.readyState === 1 /* OPEN */) {
+      conn.close(4002, 'Document version restored');
+    }
+  }
+  entry.ydoc.destroy();
+}
+
 /**
  * Flush all dirty docs to PostgreSQL (call on SIGTERM).
  */
 async function flushAll() {
   const promises = [];
   for (const [docId, entry] of docs.entries()) {
-    if (entry.dirty) promises.push(saveToDB(docId, entry.ydoc));
+    if (entry.dirty) promises.push(saveToDB(docId, entry));
   }
   await Promise.allSettled(promises);
   console.log('[YjsManager] All docs flushed');
 }
 
-export { getOrCreate, addConnection, removeConnection, broadcast, getActiveUserCount, flushAll, docs };
+export {
+  getOrCreate,
+  addConnection,
+  removeConnection,
+  broadcast,
+  getActiveUserCount,
+  getCurrentState,
+  replaceDocumentState,
+  flushAll,
+  docs,
+};
 
 export default {
   getOrCreate,
@@ -211,6 +274,8 @@ export default {
   removeConnection,
   broadcast,
   getActiveUserCount,
+  getCurrentState,
+  replaceDocumentState,
   flushAll,
   docs,
 };

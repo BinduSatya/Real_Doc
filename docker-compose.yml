@@ -15,7 +15,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+      - ./backend/src/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -61,6 +61,7 @@ services:
       REDIS_PORT:         6379
       PERSIST_INTERVAL_MS: 5000
       DOC_IDLE_TIMEOUT_MS: 30000
+      JWT_SECRET:         "change-me-in-production"
       CORS_ORIGIN:        "http://localhost:5173"
     ports:
       - "4000:4000"
