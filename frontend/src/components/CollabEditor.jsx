@@ -426,12 +426,7 @@ export default function CollabEditor({
           </div>
 
           {/* DRAWING LAYER (ON TOP FOR INTERACTION) */}
-          <div
-            className="absolute top-0 left-0 w-full h-full z-20"
-            style={{
-              pointerEvents: activeTool === "select" ? "none" : "auto",
-            }}
-          >
+          <div className="absolute top-0 left-0 w-full h-full z-20">
             <DrawingLayer
               docId={docId}
               ydoc={ydoc}
@@ -451,31 +446,10 @@ export default function CollabEditor({
             />
           </div>
 
-          {/* TEXT EDITOR (TOP LAYER) */}
+          {/* TEXT EDITOR — sits below drawing layer, receives clicks on empty areas */}
           <div className="relative z-10">
             <EditorContent editor={editor} />
           </div>
-
-          {/* SELECT MODE INTERACTION LAYER */}
-          {activeTool === "select" && (
-            <svg
-              className="absolute top-0 left-0 w-full h-full z-20"
-              viewBox={`0 0 794 ${pageCount * 1123}`}
-              style={{
-                width: "794px",
-                height: `${pageCount * 1123}px`,
-                pointerEvents: "auto",
-                touchAction: "none",
-              }}
-              onPointerDown={(e) => {
-                const target = e.target;
-                // Only handle clicks on the SVG itself, not on elements inside
-                if (target.tagName === "svg") {
-                  drawingRef.current?.handleSelectModeSvgClick?.(e);
-                }
-              }}
-            />
-          )}
         </div>
       </div>
     </div>

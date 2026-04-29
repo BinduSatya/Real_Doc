@@ -445,56 +445,14 @@ export function DrawingToolbar({
   );
 }
 
-function ShapeLabel({ shape, allShapes, canvasWidth, canvasHeight }) {
+// AFTER — always centered inside the shape
+function ShapeLabel({ shape }) {
   if (!shape.text) return null;
 
-  // Helper to check text overlap with any shape
-  const checkTextOverlap = (x, y, w, h) => {
-    const textBounds = { x, y, width: w, height: h };
-    return allShapes.some((s) => {
-      if (s.id === shape.id || s.type === "pen") return false;
-      const sBounds = shapeBounds(s);
-      return rectsOverlap(textBounds, sBounds, 2);
-    });
-  };
-
-  // Calculate optimal text position
-  let x = shape.x + 8;
-  let y = shape.y + 8;
-  let width = Math.max(1, shape.width - 16);
-  let height = Math.max(1, shape.height - 16);
-  let isInsideShape = true;
-
-  // If text overlaps with shapes, try to move it
-  if (shape.type !== "pen" && allShapes.length > 1) {
-    const textWidth = 100;
-    const lineHeight = 20;
-
-    // Try positions in order: right, below, left, above
-    const positions = [
-      { x: shape.x + shape.width + 8, y: shape.y, outside: "right" }, // right
-      { x: shape.x, y: shape.y + shape.height + 8, outside: "below" }, // below
-      { x: shape.x - textWidth - 8, y: shape.y, outside: "left" }, // left
-      { x: shape.x, y: shape.y - lineHeight - 8, outside: "above" }, // above
-    ];
-
-    for (const pos of positions) {
-      if (
-        !checkTextOverlap(pos.x, pos.y, textWidth, lineHeight) &&
-        pos.x >= 0 &&
-        pos.y >= 0 &&
-        pos.x + textWidth <= canvasWidth &&
-        pos.y + lineHeight <= canvasHeight
-      ) {
-        x = pos.x;
-        y = pos.y;
-        width = textWidth;
-        height = lineHeight;
-        isInsideShape = false;
-        break;
-      }
-    }
-  }
+  const x = shape.x + 4;
+  const y = shape.y + 4;
+  const width = Math.max(1, shape.width - 8);
+  const height = Math.max(1, shape.height - 8);
 
   return (
     <foreignObject
@@ -655,6 +613,18 @@ function DrawingLayer(
     };
   }, [docId, editor, shapes, canEdit]);
 
+  useEffect(() => {
+    if (!editor) return undefined;
+
+    const handleEditorFocus = () => {
+      setSelectedId(null);
+      setConnectorStart(null);
+    };
+
+    editor.on("focus", handleEditorFocus);
+    return () => editor.off("focus", handleEditorFocus);
+  }, [editor]);
+
   const getTextRects = useCallback(() => {
     const svg = svgRef.current;
     const editorDom = editor?.view?.dom;
@@ -750,8 +720,18 @@ function DrawingLayer(
       lastDocClickRef.current = { time: now, x: point.x, y: point.y };
 
       if (isDoubleClick) {
-        // Focus the editor for text input
-        editor?.commands.focus();
+        const editorView = editor?.view;
+        if (editorView) {
+          // Translate the screen-space click to a ProseMirror document position
+          const pmPos = editorView.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+          editor.commands.focus();
+          if (pmPos) {
+            editor.commands.setTextSelection(pmPos.pos);
+          }
+        }
         return;
       }
 
@@ -898,6 +878,8 @@ function DrawingLayer(
     }
     setDraft(null);
     setIsDrawing(false);
+    // Always snap back to select so the user can immediately move/resize
+    setEffectiveActiveTool("select");
   };
 
   const handleShapePointerDown = (event, shape) => {
@@ -953,6 +935,7 @@ function DrawingLayer(
         lineStyle,
       });
       setConnectorStart(null);
+      setEffectiveActiveTool("select"); // snap back after arrow is placed
       return;
     }
 
@@ -1007,22 +990,24 @@ function DrawingLayer(
     <>
       <svg
         ref={svgRef}
-        className={`
-          drawing-layer w-full h-full
-        `}
+        className="drawing-layer w-full h-full"
         viewBox={`0 0 ${PAGE_WIDTH} ${pageHeight}`}
         style={{
           height: pageHeight,
           width: PAGE_WIDTH,
-          cursor: getCursorStyle(),
+          // In select mode: background is transparent so clicks reach the text editor.
+          // Shapes override this with pointer-events: all (see Change 2).
+          // In drawing mode: SVG captures everything so the user can draw on empty space.
+          pointerEvents: effectiveActiveTool === "select" ? "none" : "auto",
+          // Text cursor over empty areas; tool cursors while drawing
+          cursor: effectiveActiveTool === "select" ? "text" : getCursorStyle(),
         }}
-        onPointerDown={(e) => {
-          handlePointerDown(e);
-        }}
-        onPointerMove={handlePointerMove}
+        onPointerDown={
+          effectiveActiveTool !== "select" ? handlePointerDown : undefined
+        }
+        onPointerMove={handlePointerMove} // still needed: drag/resize track via window
         onPointerUp={finishDraft}
         onPointerLeave={finishDraft}
-        aria-label="Drawing canvas"
       >
         <defs>
           <marker
@@ -1100,6 +1085,7 @@ function DrawingLayer(
               className="drawing-connector"
               d={connectorPath(connector, fromShape, toShape)}
               fill="none"
+              style={{ pointerEvents: "all" }}
               stroke={connector.stroke}
               strokeWidth={connector.strokeWidth ?? 2.5}
               strokeDasharray={
@@ -1133,6 +1119,7 @@ function DrawingLayer(
               <path
                 key={shape.id}
                 {...common}
+                style={{ pointerEvents: "all" }}
                 d={toPath(shape.points)}
                 fill="none"
                 strokeLinecap="round"
@@ -1141,7 +1128,7 @@ function DrawingLayer(
             );
           }
           return (
-            <g key={shape.id}>
+            <g key={shape.id} style={{ pointerEvents: "all" }}>
               {shape.type === "rect" && (
                 <rect
                   {...common}
@@ -1203,12 +1190,7 @@ function DrawingLayer(
                   />
                 </foreignObject>
               ) : (
-                <ShapeLabel
-                  shape={shape}
-                  allShapes={shapes}
-                  canvasWidth={PAGE_WIDTH}
-                  canvasHeight={pageHeight}
-                />
+                <ShapeLabel shape={shape} />
               )}
 
               {/* Resize handles */}
