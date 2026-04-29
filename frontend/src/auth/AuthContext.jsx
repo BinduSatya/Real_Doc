@@ -18,7 +18,6 @@ import {
 const AuthContext = createContext(null);
 const API_URL = import.meta.env.VITE_API_URL;
 
-
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
@@ -68,7 +67,7 @@ function AuthProvider({ children }) {
   }, [user]);
 
   const login = useCallback(async ({ mode, email, password, displayName }) => {
-    const res = await fetch(`${API_URL}}/api/auth/${mode}`, {
+    const res = await fetch(`${API_URL}/api/auth/${mode}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
