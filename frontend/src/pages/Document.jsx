@@ -7,6 +7,7 @@ import CollabEditor from "../components/CollabEditor";
 import { useCollaboration } from "../hooks/useCollaboration";
 
 const API = "/api/documents";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Document() {
   const { docId } = useParams();
@@ -37,9 +38,9 @@ export default function Document() {
   const loadPanelData = useCallback(async () => {
     if (!docId) return;
     const [membersRes, commentsRes, versionsRes] = await Promise.all([
-      apiFetch(`${VITE_API_URL}/${API}/${docId}/members`),
-      apiFetch(`${VITE_API_URL}/${API}/${docId}/comments`),
-      apiFetch(`${VITE_API_URL}/${API}/${docId}/snapshots`),
+      apiFetch(`${API_URL}/${API}/${docId}/members`),
+      apiFetch(`${API_URL}/${API}/${docId}/comments`),
+      apiFetch(`${API_URL}/${API}/${docId}/snapshots`),
     ]);
     if (membersRes.ok) setMembers(await membersRes.json());
     if (commentsRes.ok) setComments(await commentsRes.json());
@@ -48,7 +49,7 @@ export default function Document() {
 
   useEffect(() => {
     if (!docId) return;
-    apiFetch(`${VITE_API_URL}/${API}/${docId}`)
+    apiFetch(`${API_URL}/${API}/${docId}`)
       .then((r) => {
         if (r.status === 404 || r.status === 403) {
           navigate("/");
@@ -82,7 +83,7 @@ export default function Document() {
     const trimmed = titleDraft.trim() || "Untitled Document";
     setEditingTitle(false);
     if (!canEdit || trimmed === docMeta?.title) return;
-    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}`, {
+    const res = await apiFetch(`${API_URL}/${API}/${docId}`, {
       method: "PATCH",
       body: JSON.stringify({ title: trimmed }),
     });
@@ -94,7 +95,7 @@ export default function Document() {
   };
 
   const addComment = async (comment) => {
-    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}/comments`, {
+    const res = await apiFetch(`${API_URL}/${API}/${docId}/comments`, {
       method: "POST",
       body: JSON.stringify(comment),
     });
@@ -106,7 +107,7 @@ export default function Document() {
 
   const resolveComment = async (commentId, resolved) => {
     const res = await apiFetch(
-      `${VITE_API_URL}/${API}/${docId}/comments/${commentId}`,
+      `${API_URL}/${API}/${docId}/comments/${commentId}`,
       {
         method: "PATCH",
         body: JSON.stringify({ resolved }),
@@ -122,7 +123,7 @@ export default function Document() {
   const inviteMember = async (event) => {
     event.preventDefault();
     setShareMessage("");
-    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}/members`, {
+    const res = await apiFetch(`${API_URL}/${API}/${docId}/members`, {
       method: "POST",
       body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
     });
@@ -159,7 +160,7 @@ export default function Document() {
 
     setRestoringVersion(version.id);
     const res = await apiFetch(
-      `${VITE_API_URL}/${API}/${docId}/snapshots/${version.id}/restore`,
+      `${API_URL}/${API}/${docId}/snapshots/${version.id}/restore`,
       {
         method: "POST",
       },

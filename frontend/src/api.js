@@ -1,4 +1,5 @@
 let accessToken = localStorage.getItem("access-token") || "";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function decodeJwtPayload(token) {
   try {
@@ -46,7 +47,7 @@ function setAccessToken(token) {
 }
 
 async function refreshAccessToken() {
-  const res = await fetch(`${VITE_API_URL}/api/auth/refresh`, {
+  const res = await fetch(`${API_URL}/api/auth/refresh`, {
     method: "POST",
     credentials: "include",
   });

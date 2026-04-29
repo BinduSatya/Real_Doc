@@ -13,6 +13,7 @@ const PAGE_WIDTH = 794;
 const DEFAULT_FILL = "#dbeafe";
 const DEFAULT_STROKE = "#0c1017";
 const MIN_SIZE = 36;
+const API_URL = import.meta.env.VITE_API_URL;
 
 function createId(prefix) {
   if (globalThis.crypto?.randomUUID)
@@ -597,7 +598,7 @@ function DrawingLayer(
         const current = getCombinedText();
         if (current !== lastSavedTextRef.current) {
           const res = await apiFetch(
-            `${VITE_API_URL}/api/documents/${docId}/snapshots`,
+            `${API_URL}/api/documents/${docId}/snapshots`,
             {
               method: "POST",
               body: JSON.stringify({ label: "Text change" }),

@@ -16,6 +16,8 @@ import {
 } from "../api";
 
 const AuthContext = createContext(null);
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -30,11 +32,9 @@ function AuthProvider({ children }) {
         setUser(localUser);
         setBooting(false);
 
-        const res = await apiFetch(
-          `${VITE_API_URL}/api/auth/me`,
-          {},
-          false,
-        ).catch(() => null);
+        const res = await apiFetch(`${API_URL}/api/auth/me`, {}, false).catch(
+          () => null,
+        );
         if (!cancelled && res?.ok) {
           const data = await res.json();
           setUser(data.user);
@@ -68,7 +68,7 @@ function AuthProvider({ children }) {
   }, [user]);
 
   const login = useCallback(async ({ mode, email, password, displayName }) => {
-    const res = await fetch(`${VITE_API_URL}}/api/auth/${mode}`, {
+    const res = await fetch(`${API_URL}}/api/auth/${mode}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -82,7 +82,7 @@ function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await apiFetch(`${VITE_API_URL}/api/auth/logout`, { method: "POST" }).catch(
+    await apiFetch(`${API_URL}/api/auth/logout`, { method: "POST" }).catch(
       () => {},
     );
     setAccessToken("");
