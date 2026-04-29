@@ -596,10 +596,13 @@ function DrawingLayer(
       try {
         const current = getCombinedText();
         if (current !== lastSavedTextRef.current) {
-          const res = await apiFetch(`/api/documents/${docId}/snapshots`, {
-            method: "POST",
-            body: JSON.stringify({ label: "Text change" }),
-          });
+          const res = await apiFetch(
+            `${VITE_API_URL}/api/documents/${docId}/snapshots`,
+            {
+              method: "POST",
+              body: JSON.stringify({ label: "Text change" }),
+            },
+          );
           if (res.ok) lastSavedTextRef.current = current;
         }
       } catch (e) {

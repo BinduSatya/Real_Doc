@@ -1,6 +1,19 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import { apiFetch, isAccessTokenFresh, refreshAccessToken, setAccessToken, userFromAccessToken } from '../api';
+import {
+  apiFetch,
+  isAccessTokenFresh,
+  refreshAccessToken,
+  setAccessToken,
+  userFromAccessToken,
+} from "../api";
 
 const AuthContext = createContext(null);
 
@@ -17,7 +30,11 @@ function AuthProvider({ children }) {
         setUser(localUser);
         setBooting(false);
 
-        const res = await apiFetch('/api/auth/me', {}, false).catch(() => null);
+        const res = await apiFetch(
+          `${VITE_API_URL}/api/auth/me`,
+          {},
+          false,
+        ).catch(() => null);
         if (!cancelled && res?.ok) {
           const data = await res.json();
           setUser(data.user);
@@ -39,42 +56,50 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!user) return undefined;
-    const id = setInterval(() => {
-      refreshAccessToken()
-        .then((data) => setUser(data.user))
-        .catch(() => setUser(null));
-    }, 14 * 60 * 1000);
+    const id = setInterval(
+      () => {
+        refreshAccessToken()
+          .then((data) => setUser(data.user))
+          .catch(() => setUser(null));
+      },
+      14 * 60 * 1000,
+    );
     return () => clearInterval(id);
   }, [user]);
 
   const login = useCallback(async ({ mode, email, password, displayName }) => {
-    const res = await fetch(`/api/auth/${mode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+    const res = await fetch(`${VITE_API_URL}}/api/auth/${mode}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ email, password, displayName }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Authentication failed');
+    if (!res.ok) throw new Error(data.error || "Authentication failed");
     setAccessToken(data.accessToken);
     setUser(data.user);
     return data.user;
   }, []);
 
   const logout = useCallback(async () => {
-    await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    setAccessToken('');
+    await apiFetch(`${VITE_API_URL}/api/auth/logout`, { method: "POST" }).catch(
+      () => {},
+    );
+    setAccessToken("");
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, booting, login, logout }), [user, booting, login, logout]);
+  const value = useMemo(
+    () => ({ user, booting, login, logout }),
+    [user, booting, login, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
 

@@ -1,11 +1,14 @@
-let accessToken = localStorage.getItem('access-token') || '';
+let accessToken = localStorage.getItem("access-token") || "";
 
 function decodeJwtPayload(token) {
   try {
-    let payload = token.split('.')[1];
+    let payload = token.split(".")[1];
     if (!payload) return null;
-    payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-    payload = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), '=');
+    payload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    payload = payload.padEnd(
+      payload.length + ((4 - (payload.length % 4)) % 4),
+      "=",
+    );
     return JSON.parse(atob(payload));
   } catch (_) {
     return null;
@@ -37,19 +40,19 @@ function userFromAccessToken() {
 }
 
 function setAccessToken(token) {
-  accessToken = token || '';
-  if (accessToken) localStorage.setItem('access-token', accessToken);
-  else localStorage.removeItem('access-token');
+  accessToken = token || "";
+  if (accessToken) localStorage.setItem("access-token", accessToken);
+  else localStorage.removeItem("access-token");
 }
 
 async function refreshAccessToken() {
-  const res = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    credentials: 'include',
+  const res = await fetch(`${VITE_API_URL}/api/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
   });
   if (!res.ok) {
-    setAccessToken('');
-    throw new Error('Session expired');
+    setAccessToken("");
+    throw new Error("Session expired");
   }
   const data = await res.json();
   setAccessToken(data.accessToken);
@@ -58,15 +61,15 @@ async function refreshAccessToken() {
 
 async function apiFetch(url, options = {}, retry = true) {
   const headers = new Headers(options.headers || {});
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  if (options.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
   }
 
   const res = await fetch(url, {
     ...options,
     headers,
-    credentials: 'include',
+    credentials: "include",
   });
 
   if (res.status === 401 && retry) {

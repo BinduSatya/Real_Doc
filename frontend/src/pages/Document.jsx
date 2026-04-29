@@ -37,9 +37,9 @@ export default function Document() {
   const loadPanelData = useCallback(async () => {
     if (!docId) return;
     const [membersRes, commentsRes, versionsRes] = await Promise.all([
-      apiFetch(`${API}/${docId}/members`),
-      apiFetch(`${API}/${docId}/comments`),
-      apiFetch(`${API}/${docId}/snapshots`),
+      apiFetch(`${VITE_API_URL}/${API}/${docId}/members`),
+      apiFetch(`${VITE_API_URL}/${API}/${docId}/comments`),
+      apiFetch(`${VITE_API_URL}/${API}/${docId}/snapshots`),
     ]);
     if (membersRes.ok) setMembers(await membersRes.json());
     if (commentsRes.ok) setComments(await commentsRes.json());
@@ -48,7 +48,7 @@ export default function Document() {
 
   useEffect(() => {
     if (!docId) return;
-    apiFetch(`${API}/${docId}`)
+    apiFetch(`${VITE_API_URL}/${API}/${docId}`)
       .then((r) => {
         if (r.status === 404 || r.status === 403) {
           navigate("/");
@@ -82,7 +82,7 @@ export default function Document() {
     const trimmed = titleDraft.trim() || "Untitled Document";
     setEditingTitle(false);
     if (!canEdit || trimmed === docMeta?.title) return;
-    const res = await apiFetch(`${API}/${docId}`, {
+    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}`, {
       method: "PATCH",
       body: JSON.stringify({ title: trimmed }),
     });
@@ -94,7 +94,7 @@ export default function Document() {
   };
 
   const addComment = async (comment) => {
-    const res = await apiFetch(`${API}/${docId}/comments`, {
+    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}/comments`, {
       method: "POST",
       body: JSON.stringify(comment),
     });
@@ -105,10 +105,13 @@ export default function Document() {
   };
 
   const resolveComment = async (commentId, resolved) => {
-    const res = await apiFetch(`${API}/${docId}/comments/${commentId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ resolved }),
-    });
+    const res = await apiFetch(
+      `${VITE_API_URL}/${API}/${docId}/comments/${commentId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ resolved }),
+      },
+    );
     if (res.ok) {
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, resolved } : c)),
@@ -119,7 +122,7 @@ export default function Document() {
   const inviteMember = async (event) => {
     event.preventDefault();
     setShareMessage("");
-    const res = await apiFetch(`${API}/${docId}/members`, {
+    const res = await apiFetch(`${VITE_API_URL}/${API}/${docId}/members`, {
       method: "POST",
       body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
     });
@@ -156,7 +159,7 @@ export default function Document() {
 
     setRestoringVersion(version.id);
     const res = await apiFetch(
-      `${API}/${docId}/snapshots/${version.id}/restore`,
+      `${VITE_API_URL}/${API}/${docId}/snapshots/${version.id}/restore`,
       {
         method: "POST",
       },
