@@ -143,8 +143,6 @@ export default function CollabEditor({
 }) {
   const canEdit = role === "owner" || role === "editor";
   const [activeTool, setActiveTool] = useState("select");
-  const [connectorKind, setConnectorKind] = useState("line");
-  const [connectorFilled, setConnectorFilled] = useState(true);
   const [lineStyle, setLineStyle] = useState("solid");
   const drawingRef = useRef(null);
   const [headerSelectedShape, setHeaderSelectedShape] = useState(null);
@@ -322,10 +320,6 @@ export default function CollabEditor({
           <DrawingToolbar
             activeTool={activeTool}
             setActiveTool={setActiveTool}
-            connectorKind={connectorKind}
-            setConnectorKind={setConnectorKind}
-            connectorFilled={connectorFilled}
-            setConnectorFilled={setConnectorFilled}
             lineStyle={lineStyle}
             setLineStyle={setLineStyle}
             selectedShape={headerSelectedShape}
@@ -348,13 +342,12 @@ export default function CollabEditor({
               drawingRef.current?.updateSelectedFillOpacity?.(o)
             }
             selectedStroke={headerSelectedShape?.stroke}
-            selectedFilled={Boolean(
-              headerSelectedShape?.fill &&
-              headerSelectedShape.fill !== "transparent",
-            )}
-            selectedFillColor={headerSelectedShape?.fill}
+            selectedFillColor={
+              headerSelectedShape?.fill !== "transparent"
+                ? headerSelectedShape?.fill
+                : undefined
+            }
             disabled={!canEdit}
-            compact={true} // 👈 IMPORTANT
           />
         </div>
 
@@ -435,10 +428,6 @@ export default function CollabEditor({
               editor={editor}
               activeTool={activeTool}
               setActiveTool={setActiveTool}
-              connectorKind={connectorKind}
-              setConnectorKind={setConnectorKind}
-              connectorFilled={connectorFilled}
-              setConnectorFilled={setConnectorFilled}
               lineStyle={lineStyle}
               setLineStyle={setLineStyle}
               ref={drawingRef}
@@ -447,7 +436,14 @@ export default function CollabEditor({
           </div>
 
           {/* TEXT EDITOR — sits below drawing layer, receives clicks on empty areas */}
-          <div className="relative z-10">
+          {/* TEXT EDITOR — sits below drawing layer */}
+          <div
+            className="relative z-10"
+            onPointerDown={() => {
+              // When user clicks the text area, deselect any active shape
+              drawingRef.current?.clearSelection?.();
+            }}
+          >
             <EditorContent editor={editor} />
           </div>
         </div>

@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import CollabEditor from "../components/CollabEditor";
 import { useCollaboration } from "../hooks/useCollaboration";
 
-const API = "/api/documents";
+const API = "api/documents";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Document() {
@@ -123,7 +123,7 @@ export default function Document() {
   const inviteMember = async (event) => {
     event.preventDefault();
     setShareMessage("");
-    const res = await apiFetch(`${API_URL}/${API}/${docId}/members`, {
+    const res = await apiFetch(`${API_URL}/${API}${docId}/members`, {
       method: "POST",
       body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
     });

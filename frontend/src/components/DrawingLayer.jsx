@@ -152,33 +152,30 @@ function getShapeEdgePoint(shape, target) {
 }
 
 function connectorPath(connector, fromShape, toShape) {
-  const from = getShapeEdgePoint(fromShape, toShape);
-  const to = getShapeEdgePoint(toShape, fromShape);
+  const from = getShapeEdgePoint(fromShape, shapeCenter(toShape));
+  const to = getShapeEdgePoint(toShape, shapeCenter(fromShape));
 
-  if (connector.pathType === "curve") {
-    const delta = Math.max(60, Math.abs(to.x - from.x) / 2);
-    return `M ${from.x} ${from.y} C ${from.x + delta} ${from.y}, ${to.x - delta} ${to.y}, ${to.x} ${to.y}`;
+  const cx1 = fromShape.x + fromShape.width / 2;
+  const cy1 = fromShape.y + fromShape.height / 2;
+  const cx2 = toShape.x + toShape.width / 2;
+  const cy2 = toShape.y + toShape.height / 2;
+  const dx = Math.abs(cx2 - cx1);
+  const dy = Math.abs(cy2 - cy1);
+
+  // If shapes are roughly aligned on one axis, use a straight line
+  const ALIGN_THRESHOLD = 48;
+  if (dx < ALIGN_THRESHOLD || dy < ALIGN_THRESHOLD) {
+    return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
   }
 
-  // Orthogonal path: only horizontal and vertical lines (0 or 90 degrees)
-  if (connector.pathType === "elbow") {
-    const dx = Math.abs(to.x - from.x);
-    const dy = Math.abs(to.y - from.y);
-
-    // Determine if we should go horizontal first or vertical first
-    if (dx > dy) {
-      // Go horizontal first, then vertical
-      const midX = from.x + (to.x - from.x) / 2;
-      return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
-    } else {
-      // Go vertical first, then horizontal
-      const midY = from.y + (to.y - from.y) / 2;
-      return `M ${from.x} ${from.y} L ${from.x} ${midY} L ${to.x} ${midY} L ${to.x} ${to.y}`;
-    }
+  // Otherwise use an elbow (L-shaped) connector
+  if (dx >= dy) {
+    const midX = from.x + (to.x - from.x) / 2;
+    return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
+  } else {
+    const midY = from.y + (to.y - from.y) / 2;
+    return `M ${from.x} ${from.y} L ${from.x} ${midY} L ${to.x} ${midY} L ${to.x} ${to.y}`;
   }
-
-  // Simple straight line
-  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
 }
 
 function trianglePoints(shape) {
@@ -224,223 +221,281 @@ function AutoFitText({ text, width, height }) {
   );
 }
 
+const HandIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v0" />
+    <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" />
+    <path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8" />
+    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+  </svg>
+);
+const SelectIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+    <path d="m13 13 6 6" />
+  </svg>
+);
+const RectIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+  </svg>
+);
+const CircleIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <circle cx="12" cy="12" r="9" />
+  </svg>
+);
+const ArrowIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M5 12h14" />
+    <path d="m12 5 7 7-7 7" />
+  </svg>
+);
+const StrokeOnlyIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect
+      x="2"
+      y="2"
+      width="12"
+      height="12"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="2"
+      fill="transparent"
+    />
+  </svg>
+);
+const FillStrokeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect
+      x="2"
+      y="2"
+      width="12"
+      height="12"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="2"
+      fill="#93c5fd"
+    />
+  </svg>
+);
+const FillOnlyIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="2" width="12" height="12" rx="2" fill="#93c5fd" />
+  </svg>
+);
+
+const TOOLS = [
+  { id: "hand", label: "Hand (pan)", Icon: HandIcon },
+  { id: "select", label: "Select", Icon: SelectIcon },
+  { id: "rect", label: "Rectangle", Icon: RectIcon },
+  { id: "circle", label: "Circle", Icon: CircleIcon },
+  { id: "arrow", label: "Arrow", Icon: ArrowIcon },
+];
+
 export function DrawingToolbar({
   activeTool,
   setActiveTool,
-  connectorKind,
-  setConnectorKind,
-  connectorFilled,
-  setConnectorFilled,
-  lineStyle,
-  setLineStyle,
   selectedShape,
   updateSelectedText,
   updateSelectedStroke,
   updateSelectedStrokeWidth,
   updateSelectedFill,
   updateSelectedFillColor,
-  updateSelectedFillOpacity,
-  selectedStroke,
-  selectedFilled,
-  selectedFillColor,
   disabled,
-  compact = false,
+  selectedStroke,
+  selectedFillColor,
 }) {
-  const showShapeOptions = selectedShape && selectedShape.type !== "pen";
+  const showProps = selectedShape && selectedShape.type !== "pen";
 
-  if (compact) {
-    // Compact version - horizontal buttons for shape tools
-    return (
-      <div className="drawing-tools-compact flex items-center gap-1">
-        {Object.entries(TOOL_LABELS).map(([value, label]) => (
+  // Derive fill mode from shape state
+  const fillMode = (() => {
+    if (!showProps) return "fill-stroke";
+    const hasFill = selectedShape.fill && selectedShape.fill !== "transparent";
+    const hasStroke = selectedShape.strokeWidth !== 0;
+    if (hasFill && hasStroke) return "fill-stroke";
+    if (hasFill) return "fill-only";
+    return "stroke-only";
+  })();
+
+  const applyFillMode = (mode) => {
+    if (!selectedShape) return;
+    if (mode === "stroke-only") {
+      updateSelectedFill(false); // fill → transparent
+      updateSelectedStrokeWidth(2);
+    } else if (mode === "fill-stroke") {
+      updateSelectedFill(true);
+      updateSelectedStrokeWidth(2);
+    } else if (mode === "fill-only") {
+      updateSelectedFill(true);
+      updateSelectedStrokeWidth(0);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {/* ── Tool Buttons ─────────────────────────────── */}
+      <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1">
+        {TOOLS.map(({ id, label, Icon }) => (
           <button
-            key={value}
-            onClick={() => setActiveTool(value)}
-            disabled={disabled}
+            key={id}
             title={label}
+            disabled={disabled}
+            onClick={() => setActiveTool(id)}
             className={`
-              px-3 py-1 rounded text-sm font-medium transition-colors
+              p-1.5 rounded-lg transition-all duration-100
               ${
-                activeTool === value
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                activeTool === id
+                  ? "bg-white shadow text-violet-700 ring-1 ring-violet-300"
+                  : "text-gray-500 hover:bg-white/70 hover:text-gray-800"
               }
-              ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+              ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
             `}
           >
-            {label}
+            <Icon />
           </button>
         ))}
       </div>
-    );
-  }
 
-  return (
-    // <div className="drawing-toolbar" aria-label="Drawing tools">
-    <div className="flex items-center gap-2" aria-label="Drawing tools">
-      {/* Tool Selection */}
-      <div className="toolbar-section">
-        <select
-          className="toolbar-select"
-          value={activeTool}
-          disabled={disabled}
-          onChange={(event) => setActiveTool(event.target.value)}
-        >
-          {Object.entries(TOOL_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* ── Shape Properties (shown only when a shape is selected) ── */}
+      {showProps && (
+        <>
+          <div className="w-px h-6 bg-gray-200 mx-1" />
 
-      {/* Connector Options */}
-      <div className="toolbar-section">
-        <select
-          className="toolbar-select toolbar-select--small"
-          value={connectorKind}
-          hidden={disabled || activeTool !== "connector"}
-          onChange={(event) => setConnectorKind(event.target.value)}
-          title="Arrow path"
-        >
-          <option value="line">Line</option>
-          <option value="curve">Curve</option>
-          <option value="elbow">Elbow</option>
-        </select>
-        <select
-          className="toolbar-select toolbar-select--small"
-          value={lineStyle}
-          disabled={disabled}
-          onChange={(event) => setLineStyle(event.target.value)}
-          title="Line style"
-        >
-          <option value="solid">Solid</option>
-          <option value="dashed">Dashed</option>
-        </select>
-        {activeTool === "connector" && (
-          <label className="drawing-toggle" title="Filled arrow head">
-            <input
-              type="checkbox"
-              checked={connectorFilled}
-              disabled={disabled}
-              onChange={(event) => setConnectorFilled(event.target.checked)}
-            />
-            Fill
-          </label>
-        )}
-      </div>
+          {/* Fill mode toggle */}
+          <div
+            className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1"
+            title="Fill style"
+          >
+            {[
+              {
+                mode: "stroke-only",
+                title: "Border only",
+                Icon: StrokeOnlyIcon,
+              },
+              {
+                mode: "fill-stroke",
+                title: "Fill + Border",
+                Icon: FillStrokeIcon,
+              },
+              { mode: "fill-only", title: "Fill only", Icon: FillOnlyIcon },
+            ].map(({ mode, title, Icon }) => (
+              <button
+                key={mode}
+                title={title}
+                onClick={() => applyFillMode(mode)}
+                className={`
+                  p-1.5 rounded-lg transition-all duration-100
+                  ${
+                    fillMode === mode
+                      ? "bg-white shadow ring-1 ring-violet-300 text-violet-700"
+                      : "text-gray-500 hover:bg-white/70"
+                  }
+                `}
+              >
+                <Icon />
+              </button>
+            ))}
+          </div>
 
-      {/* Shape Color & Stroke Options */}
-      <div className="toolbar-section">
-        <label className="toolbar-label">Stroke:</label>
-        <input
-          type="color"
-          value={selectedStroke || DEFAULT_STROKE}
-          disabled={disabled || (!selectedShape && !activeTool)}
-          onChange={(event) => updateSelectedStroke(event.target.value)}
-          title="Border color"
-        />
-        <label className="toolbar-label">Width:</label>
-        <input
-          type="range"
-          min="1"
-          max="12"
-          value={selectedShape?.strokeWidth || 2}
-          disabled={disabled || (!selectedShape && !activeTool)}
-          onChange={(event) =>
-            updateSelectedStrokeWidth(Number(event.target.value))
-          }
-          title="Border width"
-        />
-      </div>
+          <div className="w-px h-6 bg-gray-200 mx-1" />
 
-      {/* Fill Color Options */}
-      {showShapeOptions && (
-        <div className="toolbar-section">
-          <label className="toolbar-label">Fill:</label>
+          {/* Stroke color */}
+          {fillMode !== "fill-only" && (
+            <label
+              className="flex items-center gap-1 cursor-pointer"
+              title="Border color"
+            >
+              <span className="text-xs text-gray-400 select-none">Border</span>
+              <span
+                className="w-6 h-6 rounded-full border-2 border-white shadow"
+                style={{ background: selectedStroke || DEFAULT_STROKE }}
+              >
+                <input
+                  type="color"
+                  value={selectedStroke || DEFAULT_STROKE}
+                  onChange={(e) => updateSelectedStroke(e.target.value)}
+                  className="opacity-0 w-full h-full cursor-pointer"
+                />
+              </span>
+            </label>
+          )}
+
+          {/* Fill color */}
+          {fillMode !== "stroke-only" && (
+            <label
+              className="flex items-center gap-1 cursor-pointer"
+              title="Fill color"
+            >
+              <span className="text-xs text-gray-400 select-none">Fill</span>
+              <span
+                className="w-6 h-6 rounded-full border-2 border-white shadow"
+                style={{ background: selectedFillColor || DEFAULT_FILL }}
+              >
+                <input
+                  type="color"
+                  value={selectedFillColor || DEFAULT_FILL}
+                  onChange={(e) => updateSelectedFillColor(e.target.value)}
+                  className="opacity-0 w-full h-full cursor-pointer"
+                />
+              </span>
+            </label>
+          )}
+
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          {/* Text label */}
           <input
-            type="color"
-            value={selectedFillColor || DEFAULT_FILL}
-            disabled={disabled}
-            onChange={(event) => updateSelectedFillColor(event.target.value)}
-            title="Fill color"
-          />
-          <label className="toolbar-label">Opacity:</label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={Math.round((selectedShape?.fillOpacity ?? 1) * 100)}
-            disabled={disabled}
-            onChange={(event) =>
-              updateSelectedFillOpacity(Number(event.target.value) / 100)
-            }
-            title="Fill opacity"
-          />
-          <label className="drawing-toggle" title="Fill shape">
-            <input
-              type="checkbox"
-              checked={selectedFilled}
-              disabled={disabled}
-              onChange={(event) => updateSelectedFill(event.target.checked)}
-            />
-            On
-          </label>
-        </div>
-      )}
-
-      {/* Text Input */}
-      {showShapeOptions && (
-        <div className="toolbar-section">
-          <input
-            className="drawing-text-input"
-            value={selectedShape?.text || ""}
-            onChange={(event) => updateSelectedText(event.target.value)}
-            disabled={disabled || !selectedShape}
-            placeholder="Text"
+            className="border border-gray-200 rounded-lg px-2 py-1 text-sm w-28 focus:outline-none focus:ring-1 focus:ring-violet-300"
+            value={selectedShape.text || ""}
+            onChange={(e) => updateSelectedText(e.target.value)}
+            placeholder="Label…"
             title="Shape text"
           />
-        </div>
-      )}
-
-      {selectedShape && (
-        <div className="flex items-center gap-3 ml-3 px-3 py-1 bg-gray-100 rounded-md">
-          {/* Stroke */}
-          <input
-            type="color"
-            value={selectedStroke || "#000"}
-            onChange={(e) => updateSelectedStroke(e.target.value)}
-          />
-
-          {/* Width */}
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={selectedShape?.strokeWidth || 2}
-            onChange={(e) => updateSelectedStrokeWidth(Number(e.target.value))}
-            className="w-20"
-          />
-
-          {/* Fill */}
-          {selectedShape.type !== "pen" && (
-            <input
-              type="color"
-              value={selectedFillColor || "#ccc"}
-              onChange={(e) => updateSelectedFillColor(e.target.value)}
-            />
-          )}
-
-          {/* Text */}
-          {selectedShape.type !== "pen" && (
-            <input
-              className="border px-2 py-1 rounded text-sm"
-              value={selectedShape.text || ""}
-              onChange={(e) => updateSelectedText(e.target.value)}
-              placeholder="Text"
-            />
-          )}
-        </div>
+        </>
       )}
     </div>
   );
@@ -508,6 +563,7 @@ function DrawingLayer(
   const [editingTextValue, setEditingTextValue] = useState("");
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fillOpacity, setFillOpacity] = useState(1);
+  const [panState, setPanState] = useState(null); // { startX, startY, scrollLeft, scrollTop }
 
   const drawings = useMemo(() => ydoc?.getMap("drawings"), [ydoc]);
   const shapes = elements.filter((element) => element.kind === "shape");
@@ -519,6 +575,33 @@ function DrawingLayer(
   );
 
   const selectedShape = selectedId ? shapeById.get(selectedId) : null;
+
+  // Keep move/up handlers in refs to avoid stale closures
+  const handlePointerMoveRef = useRef(null);
+  const finishDraftRef = useRef(null);
+
+  // Sync refs on every render
+  useEffect(() => {
+    handlePointerMoveRef.current = handlePointerMove;
+    finishDraftRef.current = finishDraft;
+  });
+
+  // Attach to window only while an operation is active
+  useEffect(() => {
+    const active = dragState || resizeState || panState || isDrawing;
+    if (!active) return;
+
+    const onMove = (e) => handlePointerMoveRef.current?.(e);
+    const onUp = (e) => finishDraftRef.current?.(e);
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [dragState, resizeState, panState, isDrawing]);
 
   useEffect(() => {
     if (onSelectionChange) onSelectionChange(selectedShape);
@@ -533,6 +616,10 @@ function DrawingLayer(
     updateSelectedStrokeWidth: (w) => updateSelectedStrokeWidth(w),
     updateSelectedFill: (f) => updateSelectedFill(f),
     updateSelectedFillOpacity: (o) => updateSelectedFillOpacity(o),
+    clearSelection: () => {
+      setSelectedId(null);
+      setConnectorStart(null);
+    }, // ← ADD
   }));
 
   // Effective active tool + setter: use parent-controlled if provided, otherwise local state
@@ -562,9 +649,7 @@ function DrawingLayer(
     upsertElement({ ...selectedShape, fillOpacity: opacity });
   };
 
-  const activeShapeTool = ["rect", "circle", "triangle"].includes(
-    effectiveActiveTool,
-  );
+  const activeShapeTool = ["rect", "circle"].includes(effectiveActiveTool);
 
   const readElements = useCallback(() => {
     if (!drawings) return;
@@ -687,6 +772,20 @@ function DrawingLayer(
   const handlePointerDown = (event) => {
     if (!canEdit || !drawings || event.button !== 0) return;
 
+    if (effectiveActiveTool === "hand") {
+      const container = svgRef.current?.closest(".editor-body");
+      if (container) {
+        setPanState({
+          startX: event.clientX,
+          startY: event.clientY,
+          scrollLeft: container.scrollLeft,
+          scrollTop: container.scrollTop,
+        });
+        event.preventDefault();
+      }
+      return;
+    }
+
     // When using select tool, let shapes handle their own clicks
     // When using drawing tools, we want to draw over shapes, so continue processing
     if (
@@ -788,6 +887,17 @@ function DrawingLayer(
     if (!svg) return;
     const point = getPointerPosition(event, svg, pageHeight);
 
+    if (panState) {
+      const container = svgRef.current?.closest(".editor-body");
+      if (container) {
+        container.scrollLeft =
+          panState.scrollLeft - (event.clientX - panState.startX);
+        container.scrollTop =
+          panState.scrollTop - (event.clientY - panState.startY);
+      }
+      return;
+    }
+
     if (resizeState) {
       const { shape, handle } = resizeState;
       const dx = point.x - resizeState.start.x;
@@ -850,6 +960,10 @@ function DrawingLayer(
   };
 
   const finishDraft = () => {
+    if (panState) {
+      setPanState(null);
+      return;
+    }
     if (resizeState) {
       setResizeState(null);
       return;
@@ -923,7 +1037,7 @@ function DrawingLayer(
       lastClickRef.current = { id: null, time: 0 };
     }
 
-    if (effectiveActiveTool === "connector") {
+    if (effectiveActiveTool === "arrow") {
       if (!connectorStart || connectorStart === shape.id) {
         setConnectorStart(shape.id);
         return;
@@ -933,11 +1047,11 @@ function DrawingLayer(
         id: createId("connector"),
         fromId: connectorStart,
         toId: shape.id,
-        pathType: connectorKind,
         stroke: strokeColor,
-        filled: connectorFilled,
+        filled: true,
         lineStyle,
       });
+
       setConnectorStart(null);
       setEffectiveActiveTool("select"); // snap back after arrow is placed
       return;
@@ -979,15 +1093,14 @@ function DrawingLayer(
 
   // Map tools to cursor styles
   const getCursorStyle = () => {
-    const toolCursors = {
+    const cursors = {
+      hand: panState ? "grabbing" : "grab",
       select: "default",
-      pen: "crosshair",
-      rect: "cell",
-      circle: "move",
-      triangle: "pointer",
-      connector: "copy",
+      rect: "crosshair",
+      circle: "crosshair",
+      arrow: "crosshair",
     };
-    return toolCursors[effectiveActiveTool] || "crosshair";
+    return cursors[effectiveActiveTool] || "default";
   };
 
   return (
@@ -1002,16 +1115,32 @@ function DrawingLayer(
           // In select mode: background is transparent so clicks reach the text editor.
           // Shapes override this with pointer-events: all (see Change 2).
           // In drawing mode: SVG captures everything so the user can draw on empty space.
-          pointerEvents: effectiveActiveTool === "select" ? "none" : "auto",
-          // Text cursor over empty areas; tool cursors while drawing
+          pointerEvents:
+            effectiveActiveTool === "select" && !dragState && !resizeState
+              ? "none"
+              : "auto",
           cursor: effectiveActiveTool === "select" ? "text" : getCursorStyle(),
         }}
-        onPointerDown={
-          effectiveActiveTool !== "select" ? handlePointerDown : undefined
-        }
+        onPointerDown={(event) => {
+          if (effectiveActiveTool === "hand") {
+            handlePointerDown(event); // pan starts here
+            return;
+          }
+          if (effectiveActiveTool === "select") {
+            if (
+              event.target === svgRef.current ||
+              event.target.tagName === "svg"
+            ) {
+              setSelectedId(null);
+              setConnectorStart(null);
+              // (keep existing double-click-to-focus-editor code)
+            }
+            return;
+          }
+          handlePointerDown(event);
+        }}
         onPointerMove={handlePointerMove} // still needed: drag/resize track via window
         onPointerUp={finishDraft}
-        onPointerLeave={finishDraft}
       >
         <defs>
           <marker
@@ -1109,9 +1238,8 @@ function DrawingLayer(
             stroke: shape.stroke,
             strokeWidth: shape.strokeWidth ?? (selected ? 3 : 2),
             strokeDasharray: shape.lineStyle === "dashed" ? "7 5" : undefined,
+            style: { pointerEvents: "all" }, // ← ADD THIS
             onPointerDown: (event) => {
-              // Only stop propagation if not using a drawing tool
-              // When drawing tool is active, allow drawing on top of shapes
               if (!activeShapeTool && effectiveActiveTool !== "pen") {
                 event.stopPropagation();
               }

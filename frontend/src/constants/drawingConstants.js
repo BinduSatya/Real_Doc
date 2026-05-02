@@ -14,11 +14,19 @@ export const COLOR_PALETTE = [
   { name: "Pink", value: "#ec4899" },
 ];
 
+// export const TOOL_LABELS = {
+//   select: "Select",
+//   pen: "Pen",
+//   rect: "Rectangle",
+//   circle: "Circle",
+//   triangle: "Triangle",
+//   connector: "Connector",
+// };
+
 export const TOOL_LABELS = {
+  hand: "Hand",
   select: "Select",
-  pen: "Pen",
   rect: "Rectangle",
   circle: "Circle",
-  triangle: "Triangle",
-  connector: "Connector",
+  arrow: "Arrow",
 };
